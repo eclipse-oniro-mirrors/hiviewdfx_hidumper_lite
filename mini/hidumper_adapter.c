@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-#include "hidumper.h"
-#include "hidumper_adapter.h"
 #include "ohos_types.h"
 #include "ohos_init.h"
 #include <securec.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "hidumper.h"
+#include "hidumper_adapter.h"
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#include "hidumper.h"
 #include <securec.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "hidumper.h"
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -92,23 +93,20 @@ int HiDumperRegisterAdapter(struct HiDumperAdapter *pAdapter)
             printf("Invalid adapter funcs!\n");
             return -1;
     }
-    memcpy_s(&g_hidumperAdapter, sizeof(g_hidumperAdapter),
-        pAdapter, sizeof(*pAdapter));
+    if (memcpy_s(&g_hidumperAdapter, sizeof(g_hidumperAdapter),
+        pAdapter, sizeof(*pAdapter)) != EOK) {
+            printf("memcpy_s is error\n");
+    }
     g_isAdapterRegistered = 1;
 
     return 0;
 }
 
-unsigned int at_hidumper(unsigned int argc, const char **argv)
+void ParameterMatching(int argc, const char *argv[])
 {
-    if (g_isAdapterRegistered == 0) {
-        printf("No adapter has been registered!\n");
-        return 1;
-    }
-
     if (argc == 0) {
         DumpAllInfo();
-    } else if (argc == 1) {
+    } else if (argc == ONE_OF_ARGC_PARAMETERS) {
         if (strcmp(argv[0], "-h") == 0) {
             Usage();
         } else if (strcmp(argv[0], "-dc") == 0) {
@@ -133,24 +131,35 @@ unsigned int at_hidumper(unsigned int argc, const char **argv)
         } else {
             Usage();
         }
-    } else if (argc == 2 && strcmp(argv[0], "-m") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[0], "-m") == 0) {
         printf("Unsupported!\n");
-    } else if (argc == 3) {
+    } else if (argc == THREE_OF_ARGC_PARAMETERS) {
         if (strcmp(argv[0], "-m") == 0) {
 #ifdef OHOS_DEBUG
-            g_hidumperAdapter.DumpMemRegion(strtoull(argv[1], NULL, 16),
-                strtoull(argv[2], NULL, 16));
+            g_hidumperAdapter.DumpMemRegion(
+                strtoull(argv[ONE_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16),
+                strtoull(argv[TWO_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16));
 #else
             printf("Unsupported!\n");
 #endif
         } else {
             Usage();
         }
-    } else if (argc == 4 && strcmp(argv[0], "-m") == 0) {
+    } else if (argc == FOUR_OF_ARGC_PARAMETERS && strcmp(argv[0], "-m") == 0) {
         printf("Unsupported!\r\n");
     } else {
         Usage();
     }
+}
+
+unsigned int at_hidumper(unsigned int argc, const char **argv)
+{
+    if (g_isAdapterRegistered == 0) {
+        printf("No adapter has been registered!\n");
+        return 1;
+    }
+
+    ParameterMatching(argc, argv);
 
     return 0;
 }
