@@ -28,6 +28,14 @@
 #define USER_FAULT_VALUE 0x4
 #define PATH_MAX_LEN     256
 
+#define ONE_OF_ARGC_PARAMETERS           1
+#define TWO_OF_ARGC_PARAMETERS           2
+#define THREE_OF_ARGC_PARAMETERS         3
+#define FOUR_OF_ARGC_PARAMETERS          4
+#define FIVE_OF_ARGC_PARAMETERS          5
+
+#define BUF_SIZE_16                      16
+
 enum MemDumpType {
     DUMP_TO_STDOUT,
     DUMP_REGION_TO_STDOUT,
@@ -143,60 +151,65 @@ static void InjectUserCrash(void)
 #endif
 }
 
-int main(int argc, char *argv[])
+int ParameterMatching(int argc, const char *argv[], int fd)
 {
-    int fd = -1;
     struct MemDumpParam param;
-    fd = open(HIDUMPER_DEVICE, O_RDONLY);
-    if (fd < 0) {
-        printf("Failed to open [%s], error [%s]\n", HIDUMPER_DEVICE, strerror(errno));
-        return -1;
-    }
-
-    if (argc == 1) {
+    if (argc == ONE_OF_ARGC_PARAMETERS) {
         DumpALLInfo(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-dc") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-dc") == 0) {
         DumpCpuUsage(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-df") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-df") == 0) {
         DumpFaultLog(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-dm") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-dm") == 0) {
         DumpMemUsage(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-dt") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-dt") == 0) {
         DumpTaskInfo(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-ikc") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-ikc") == 0) {
         InjectKernelCrash(fd);
-    } else if (argc == 2 && strcmp(argv[1], "-iuc") == 0) {
+    } else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-iuc") == 0) {
         InjectUserCrash();
-    }  else if (argc == 2 && strcmp(argv[1], "-m") == 0) {
+    }  else if (argc == TWO_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-m") == 0) {
         param.type = DUMP_TO_STDOUT;
         DumpMemData(fd, &param);
-    } else if (argc == 3 && strcmp(argv[1], "-m") == 0) {
+    } else if (argc == THREE_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-m") == 0) {
         param.type = DUMP_TO_FILE;
-        if (strncpy_s(param.filePath, sizeof(param.filePath), argv[2], sizeof(param.filePath) - 1) != EOK) {
+        if (strncpy_s(param.filePath, sizeof(param.filePath),
+            argv[TWO_OF_ARGC_PARAMETERS], sizeof(param.filePath) - 1) != EOK) {
             printf("param.filePath is not enough or strncpy_s failed\n");
-            close(fd);
             return -1;
         }
         DumpMemData(fd, &param);
-    } else if (argc == 4 && strcmp(argv[1], "-m") == 0) {
+    } else if (argc == FOUR_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-m") == 0) {
         param.type = DUMP_TO_STDOUT;
-        param.start = strtoull(argv[2], NULL, 16);
-        param.size = strtoull(argv[3], NULL, 16);
+        param.start = strtoull(argv[TWO_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16);
+        param.size = strtoull(argv[THREE_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16);
         DumpMemData(fd, &param);
-    }  else if (argc == 5 && strcmp(argv[1], "-m") == 0) {
+    }  else if (argc == FIVE_OF_ARGC_PARAMETERS && strcmp(argv[ONE_OF_ARGC_PARAMETERS], "-m") == 0) {
         param.type = DUMP_TO_FILE;
-        param.start = strtoull(argv[2], NULL, 16);
-        param.size = strtoull(argv[3], NULL, 16);
-        if (strncpy_s(param.filePath, sizeof(param.filePath), argv[4], sizeof(param.filePath) - 1) != EOK) {
+        param.start = strtoull(argv[TWO_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16);
+        param.size = strtoull(argv[THREE_OF_ARGC_PARAMETERS], NULL, BUF_SIZE_16);
+        if (strncpy_s(param.filePath, sizeof(param.filePath),
+            argv[FOUR_OF_ARGC_PARAMETERS], sizeof(param.filePath) - 1) != EOK) {
             printf("param.filePath is not enough or strncpy_s failed\n");
-            close(fd);
             return -1;
         }
         DumpMemData(fd, &param);
     } else {
         Usage();
     }
-    close(fd);
-
     return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    int fd = -1;
+    fd = open(HIDUMPER_DEVICE, O_RDONLY);
+    if (fd < 0) {
+        printf("Failed to open [%s], error [%s]\n", HIDUMPER_DEVICE, strerror(errno));
+        return -1;
+    }
+
+    int ret = ParameterMatching(argc, argv, fd);
+    close(fd);
+    return ret;
 }
