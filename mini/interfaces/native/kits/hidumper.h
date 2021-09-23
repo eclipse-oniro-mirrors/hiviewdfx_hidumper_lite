@@ -22,6 +22,13 @@ extern "C" {
 #endif /* End of #if __cplusplus */
 #endif /* End of #ifdef __cplusplus */
 
+#define ONE_OF_ARGC_PARAMETERS           1
+#define TWO_OF_ARGC_PARAMETERS           2
+#define THREE_OF_ARGC_PARAMETERS         3
+#define FOUR_OF_ARGC_PARAMETERS          4
+
+#define BUF_SIZE_16                      16
+
 struct HiDumperAdapter {
     int (*DumpSysInfo)(void);
     int (*DumpCpuUsage)(void);
