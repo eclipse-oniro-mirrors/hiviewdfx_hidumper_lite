@@ -202,7 +202,7 @@ int ParameterMatching(int argc, const char *argv[], int fd)
     return 0;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
     int fd = -1;
     fd = open(HIDUMPER_DEVICE, O_RDONLY);
