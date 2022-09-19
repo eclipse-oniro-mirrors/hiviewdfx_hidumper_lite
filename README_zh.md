@@ -1,4 +1,4 @@
-# hiviewdfx_blackbox
+# hiviewdfx_hidumper_lite
 
 -   [简介](#简介)
 -   [目录](#目录)
