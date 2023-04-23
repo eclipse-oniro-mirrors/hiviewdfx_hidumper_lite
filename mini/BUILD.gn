@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import("//build/lite/config/component/lite_component.gni")
 
 static_library("hidumper_mini") {
     sources = [
@@ -26,9 +25,4 @@ static_library("hidumper_mini") {
     ]
     cflags = [ "-Wall" ]
     deps = ["//third_party/bounds_checking_function:libsec_shared"]
-    external_deps = [
-            "hiview_lite",
-            "utils_base",
-            "liteos_m"
-    ]
 }
