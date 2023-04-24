@@ -22,11 +22,10 @@ static_library("hidumper_mini") {
         "//kernel/liteos_m/utils",
         "//kernel/liteos_m/kernel/arch/include",
         "//kernel/liteos_m/kal/posix/include",
-        "//utils_native_lite/include"
+        "//commonlibrary_utils_lite/ include",
     ]
     cflags = [ "-Wall" ]
     deps = [
-        "//third_party/bounds_checking_function:libsec_shared",
-        "//utils_native_lite:native_api"
+        "//third_party/bounds_checking_function:libsec_shared",   
     ]
 }
