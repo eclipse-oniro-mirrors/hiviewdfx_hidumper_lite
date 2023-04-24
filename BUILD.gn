@@ -13,9 +13,9 @@
 import("//build/lite/config/component/lite_component.gni")
 
 group("hidumper") {
-    deps = [ "lite:hidumper_lite" ]
+  deps = [ "lite:hidumper_lite" ]
 }
 
 group("hidumper_mini") {
-    deps = [ "mini:hidumper_mini" ]
+  deps = [ "mini:hidumper_mini" ]
 }
