@@ -25,7 +25,5 @@ static_library("hidumper_mini") {
         "//commonlibrary_utils_lite/ include",
     ]
     cflags = [ "-Wall" ]
-    deps = [
-        "//third_party/bounds_checking_function:libsec_shared",   
-    ]
+    deps = []
 }
