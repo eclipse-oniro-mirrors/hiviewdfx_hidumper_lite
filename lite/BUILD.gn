@@ -11,10 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 static_library("hidumper_lite") {
-    sources = [ "hidumper.c"]
-    cflags = [ "-Wall" ]
-    include_dirs = [ "//third_party/bounds_checking_function/include" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
+  sources = [ "hidumper.c" ]
+  cflags = [ "-Wall" ]
+  include_dirs = [ "//third_party/bounds_checking_function/include" ]
+  deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }
