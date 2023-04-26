@@ -31,8 +31,7 @@
         },
         "build": {
             "sub_component": [
-                "//base/hiviewdfx/hidumper_lite:hidumper",
-                "//base/hiviewdfx/hidumper_lite:hidumper_mini"
+                "//base/hiviewdfx/hidumper_lite:hidumper"
             ]
         }
     }
