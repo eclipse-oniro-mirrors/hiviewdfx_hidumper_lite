@@ -3,7 +3,7 @@
     "description": "System information dump service for liteos-a kernel and liteos-m kernel.",
     "optional": "false",
     "version": "3.1",
-    "license": "Apache License 2.0",
+    "license": "Apache License 4.0",
     "publishAs": "code-segment",
     "segment": {
         "destPath": "base/hiviewdfx/hidumper_lite"
