@@ -13,14 +13,11 @@
 
 import("//build/lite/config/component/lite_component.gni")
 
-static_library("hidumper_static") {
-    sources = [ "hidumper.c"]
-    cflags = [ "-Wall" ]
-    include_dirs = [ "//third_party/bounds_checking_function/include" ]
-    deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
-}
-
-lite_component("hidumper") {
-    target_type = "executable"
-    features = [ ":hidumper_static" ]
+group("hidumper") {
+  deps = []
+  if (ohos_kernel_type == "liteos_a") {
+    deps += [ "lite:hidumper_lite" ]
+  } else if (ohos_kernel_type == "liteos_m") {
+    deps += [ "mini:hidumper_mini" ]
+  }
 }

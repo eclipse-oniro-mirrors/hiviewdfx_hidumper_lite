@@ -11,19 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-static_library("hidumper_mini") {
-  sources = [
-    "hidumper_adapter.c",
-    "hidumper_core.c",
-  ]
-  include_dirs = [
-    "//base/hiviewdfx/hidumper_lite/mini/interfaces/native/kits",
-    "//kernel/liteos_m/kernel/include",
-    "//kernel/liteos_m/utils",
-    "//kernel/liteos_m/kernel/arch/include",
-    "//kernel/liteos_m/kal/posix/include",
-    "//commonlibrary/utils_lite/include",
-  ]
+static_library("hidumper_lite") {
+  sources = [ "hidumper.c" ]
   cflags = [ "-Wall" ]
+  include_dirs = [ "//third_party/bounds_checking_function/include" ]
   deps = [ "//third_party/bounds_checking_function:libsec_shared" ]
 }

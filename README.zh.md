@@ -17,7 +17,8 @@ Hiview源代码目录结构如下：
 
 ```
 /base/hiviewdfx/hidumper_lite.
-├── hidumper.c                              #AT命令处理过程
+├── lite
+    └── hidumper.c                          #AT命令处理过程
 └── mini
     ├── hidumper_adapter.c                  #hidumper功能函数适配层
     ├── hidumper_core.c                     #hidumper核心层
