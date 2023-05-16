@@ -16,8 +16,8 @@
 #ifndef HIDUMPER_ADAPTER_H
 #define HIDUMPER_ADAPTER_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -30,12 +30,12 @@ extern "C" {
 #endif
 
 extern int DumpSysInfo(void);
-extern int DumpCpuUsage(void);
 extern int DumpMemUsage(void);
+extern int DumpCpuUsage(void);
 extern int DumpTaskInfo(void);
 extern int DumpFaultLog(void);
-extern int DumpMemRegion(unsigned long long addr, unsigned long long size);
 extern int DumpAllMem(void);
+extern int DumpMemRegion(unsigned long long addr, unsigned long long size);
 extern int PlatformHiDumperIinit(void);
 
 #ifdef __cplusplus
