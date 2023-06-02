@@ -30,13 +30,13 @@ extern "C" {
 #define BUF_SIZE_16                      16
 
 struct HiDumperAdapter {
+    int (*DumpAllMem)(void);
     int (*DumpSysInfo)(void);
     int (*DumpCpuUsage)(void);
     int (*DumpMemUsage)(void);
     int (*DumpTaskInfo)(void);
     int (*DumpFaultLog)(void);
     int (*DumpMemRegion)(unsigned long long addr, unsigned long long size);
-    int (*DumpAllMem)(void);
 };
 
 int HiDumperRegisterAdapter(struct HiDumperAdapter *pAdapter);
