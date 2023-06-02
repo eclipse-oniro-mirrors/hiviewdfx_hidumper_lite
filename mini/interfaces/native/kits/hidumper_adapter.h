@@ -16,8 +16,8 @@
 #ifndef HIDUMPER_ADAPTER_H
 #define HIDUMPER_ADAPTER_H
 
-#include <cstdlib>
-#include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 #if __cplusplus
