@@ -21,7 +21,6 @@
         "deps": {
             "components": [
                 "hiview_lite",
-                "utils_base",
                 "liteos_m"
             ],
             "third_party": [
