@@ -23,10 +23,7 @@
                 "hiview_lite",
                 "liteos_m"
             ],
-            "third_party": [
-                "cjson",
-                "bounds_checking_function"
-            ]
+            "third_party": [ "bounds_checking_function" ]
         },
         "build": {
             "sub_component": [
