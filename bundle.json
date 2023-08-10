@@ -19,10 +19,7 @@
         "rom": "26KB",
         "ram": "~10KB",
         "deps": {
-            "components": [
-                "hiview_lite",
-                "liteos_m"
-            ],
+            "components": [],
             "third_party": [ "bounds_checking_function" ]
         },
         "build": {
