@@ -64,6 +64,25 @@ HiDumper Lite 是 OpenHarmony 面向 LiteOS-A / LiteOS-M 内核的轻量系统�
 
 明确说明无法运行的原因，列出推荐验证步骤供人工执行。
 
+### 3.5 完成报告格式
+
+报告应包含：改动摘要（文件列表、改动点）、验证结果（编译输出 / AT 命令输出）、风险评估（公共接口兼容性、内存占用、设备安全）、未完成事项。
+
+### 3.6 最小验证与静态检查
+
+小改动不必全量构建，按以下最小路径验证：
+
+```bash
+# 最小验证：只编译 hidumper_lite 目标
+./build.sh --product-name rk3568 --build-target //base/hiviewdfx/hidumper_lite:hidumper
+
+# 确认组件依赖未变更
+grep -n "sub_component\|deps\|components" bundle.json
+```
+
+- 本仓为纯 C 轻量组件，未配置独立 lint 工具；以构建无新增告警作为静态检查门槛。
+- 涉及 ioctl 命令 / 弱函数签名 / AT 命令格式的改动仍须走 §3.3 完成标准（含设备验证）。
+
 ## 4. 核心工作原则（必须遵守）
 
 ### 4.1 只以真实代码为准
@@ -138,6 +157,15 @@ HiDumper Lite 是 OpenHarmony 面向 LiteOS-A / LiteOS-M 内核的轻量系统�
 | `ohos_kernel_type` | GN 变量，决定编译 `lite/` 或 `mini/` |
 | `bounds_checking_function` | 第三方安全字符串库依赖 |
 
+### 6.3 开始编辑前
+
+按以下顺序确认：
+
+1. 确认任务类别（见 2.1 表）。
+2. 确认已阅读相关 README / 头文件（或明确声明「无相关文档」）。
+3. 根据「项目约束」确认不违反任何约束。
+4. 声明：「将修改 X，已阅读 Y，遵循 Z 约束」。
+
 ## 7. 编码约定
 
 ### 7.1 语言与命名
@@ -194,6 +222,12 @@ HiDumper Lite 是 OpenHarmony 面向 LiteOS-A / LiteOS-M 内核的轻量系统�
 
 - 内存地址注入（`-m,memstart,memsize`）须校验地址合法性与大小上限。
 - 内核崩溃注入（`-ikc`）仅在 debug 构建可用。
+
+### 8.5 第三方依赖
+
+- `bounds_checking_function` 为安全字符串库（`strcat_s`/`sprintf_s` 等），许可证 Apache-2.0。
+- 新增或升级第三方依赖须经许可证评审，同步 `bundle.json` 的 `deps.third_party`。
+- 不得引入 GPL 等传染性许可证依赖。
 
 ## 9. 常见陷阱
 
