@@ -39,10 +39,11 @@ const std::string PROC_STAT_PATH = "/proc/stat";
 const std::string PROC_LOADAVG_PATH = "/proc/loadavg";
 const std::string CPU_STR = "cpu";
 const int TOTAL_CPU_ID = -1;
-const int invalidPid = -1;
+const int INVALID_PID = -1;
 constexpr int SECOND_TO_MILLISECONDS = 1000;
 constexpr int PROC_STAT_FIELD_STATE = 3;
 constexpr int PROC_STAT_FIELD_MINFLT = 10;
+constexpr int LOAD_AVG_INDEX_15MIN = 2;
 
 const char *PROC_DETAILS_HEADER = "Details of Processes:";
 const char *PROC_TABLE_HEADER =
@@ -100,8 +101,8 @@ bool ReadCpuJiffies(std::map<int, CpuJiffies> &jiffies)
         std::istringstream iss(line);
         std::string cpuName;
         CpuJiffies item;
-        iss >> cpuName >> item.user >> item.nice >> item.system >> item.idle >> item.iowait
-            >> item.irq >> item.softirq >> item.steal;
+        iss >> cpuName >> item.user >> item.nice >> item.system >> item.idle >>
+            item.iowait >> item.irq >> item.softirq >> item.steal;
         int cpuId = TOTAL_CPU_ID;
         if (cpuName.size() > CPU_STR.size()) { // cpu0 cpu1 ...
             cpuId = std::stoi(cpuName.substr(CPU_STR.size()));
@@ -161,7 +162,7 @@ std::string ReadLoadAvg()
         return "";
     }
     double loads[LOAD_AVG_INFO_COUNT] = {0};
-    file >> loads[0] >> loads[1] >> loads[2];
+    file >> loads[0] >> loads[1] >> loads[LOAD_AVG_INDEX_15MIN];
     std::string info = "Load average:";
     for (size_t i = 0; i < LOAD_AVG_INFO_COUNT; i++) {
         info.append(" ");
@@ -294,7 +295,7 @@ bool CPUDumper::DumpCpuUsage(int pid)
     for (const auto &item : procSecond) {
         auto it = procFirst.find(item.first);
         if (it == procFirst.end()) {
-            continue;        
+            continue;
         }
         ProcUsage usage;
         usage.stat = item.second;

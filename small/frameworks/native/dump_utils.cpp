@@ -44,12 +44,16 @@ void DumpUtils::IgnorePipeQuit()
 
 void DumpUtils::IgnoreStdoutCache()
 {
-    setvbuf(stdout, nullptr, _IONBF, 0); // never cache stdout
+    if (setvbuf(stdout, nullptr, _IONBF, 0) != 0) {
+        DUMPER_HILOGE(MODULE_COMMON, "setvbuf stdout IGN failed, errno=%{public}d", errno);
+    }
 }
 
 void DumpUtils::IgnoreOom()
 {
-    setpriority(PRIO_PROCESS, 0, topPriority); // protect from OOM
+    if (setpriority(PRIO_PROCESS, 0, topPriority) == -1) {
+        DUMPER_HILOGE(MODULE_COMMON, "setpriority failed, errno=%{public}d", errno);
+    }
 }
 
 void DumpUtils::SetAdj(int adj)
