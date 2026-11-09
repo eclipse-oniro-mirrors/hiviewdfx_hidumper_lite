@@ -197,7 +197,7 @@ bool SmapsMemoryInfo::ShowMemorySmapsByPid(const int &pid, StringMatrix result, 
     const std::vector<std::string> MEMORY_CLASS_VEC = {
         "graph", "ark ts heap", "arkts-static heap", ".db", "dev", "dmabuf", "guard", ".hap",
         "native heap", ".so", "stack", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap",
-        "rn-hermes heap", "dart heap", "other"
+        "dart heap", "other"
     };
     int maxTitleWidth = 0;
     for (const auto& classStr : MEMORY_CLASS_VEC) {

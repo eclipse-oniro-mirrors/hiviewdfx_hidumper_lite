@@ -14,8 +14,6 @@
  */
 #ifndef HIDUMPER_COMMON_H
 #define HIDUMPER_COMMON_H
-#include <ctime>
-#include <sys/time.h>
 namespace OHOS {
 namespace HiviewDFX {
 enum DumpStatus {
@@ -29,34 +27,6 @@ enum DumpStatus {
     DUMP_CHECK_OK,
     DUMP_MORE_DATA,
 };
-
-#define LOG_TIME() \
-    do { \
-        struct timeval tp; \
-        gettimeofday(&tp, nullptr); \
-        struct tm curTime = {0}; \
-        if (localtime_r(&tp.tv_sec, &curTime) != nullptr) { \
-            fprintf(stdout, "[%04d%02d%02d %02d:%02d:%02d]", curTime.tm_year + 1900, 1 + curTime.tm_mon, \
-                    curTime.tm_mday, curTime.tm_hour, curTime.tm_min, curTime.tm_sec); \
-        } \
-    } while (0)
-
-#define LOG_ERR(format, ...) \
-    do { \
-        LOG_TIME(); \
-        fprintf(stdout, "Error:" format "", ##__VA_ARGS__); \
-    } while (0)
-
-#define HIDUMPER_DEBUG
-#ifdef HIDUMPER_DEBUG
-#define LOG_DEBUG(format, ...) \
-    do { \
-        LOG_TIME(); \
-        fprintf(stdout, "Debug:" format "(%s %d)\n", ##__VA_ARGS__, __FILE__, __LINE__); \
-    } while (0)
-#else
-#define LOG_DEBUG(format, ...)
-#endif
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

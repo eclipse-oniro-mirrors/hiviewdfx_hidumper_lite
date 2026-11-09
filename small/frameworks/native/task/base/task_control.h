@@ -50,7 +50,10 @@ struct CachedTaskTopo {
 };
 
 class TaskControl : public DelayedRefSingleton<TaskControl> {
-    DECLARE_DELAYED_REF_SINGLETON(TaskControl);
+    private:
+        friend DelayedRefSingleton<TaskControl>;
+        ~TaskControl();
+        TaskControl();
 public:
 
     DumpStatus ExecuteTask(DataInventory& dataInventory,

@@ -33,7 +33,8 @@ void MemoryFilter::ParseMemoryGroup(const string &name, string &group, uint64_t 
     if (GetGroupFromMap(name, group, endMap_,
                         bind(&StringUtils::IsEnd, &StringUtils::GetInstance(), placeholders::_1, placeholders::_2)) ||
         GetGroupFromMap(name, group, beginMap_,
-                        bind(&StringUtils::IsBegin, &StringUtils::GetInstance(), placeholders::_1, placeholders::_2))) {
+                        bind(&StringUtils::IsBegin, &StringUtils::GetInstance(),
+                             placeholders::_1, placeholders::_2))) {
         return;
     }
     group += "other";
@@ -43,7 +44,8 @@ void MemoryFilter::ParseNativeHeapMemoryGroup(const string &name, string &group,
 {
     group = "";
     if (GetGroupFromMap(name, group, heapBeginMap_,
-                        bind(&StringUtils::IsBegin, &StringUtils::GetInstance(), placeholders::_1, placeholders::_2))) {
+                        bind(&StringUtils::IsBegin, &StringUtils::GetInstance(),
+                             placeholders::_1, placeholders::_2))) {
         return;
     }
 }

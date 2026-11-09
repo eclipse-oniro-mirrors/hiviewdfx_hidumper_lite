@@ -33,7 +33,10 @@ struct StrategyConfig {
 };
 
 class DumpStrategyFactory : public DelayedRefSingleton<DumpStrategyFactory> {
-    DECLARE_DELAYED_REF_SINGLETON(DumpStrategyFactory);
+    private:
+        friend DelayedRefSingleton<DumpStrategyFactory>;
+        ~DumpStrategyFactory();
+        DumpStrategyFactory();
 public:
     DumpStatus CollectRootTasks(const DumpContext& context, std::vector<TaskId>& rootTasks);
 

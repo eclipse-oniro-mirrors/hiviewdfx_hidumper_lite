@@ -44,9 +44,9 @@ struct DumperOptions {
 
 class DumpContext {
 public:
-    DumpContext(int32_t uid, int32_t pid, int outFd) :
-        requestInfo_(std::make_shared<RequestInfo>(RequestInfo{uid, pid, UniqueFd(outFd)})),
-        dumperOpts_(std::make_shared<DumperOptions>()) {}
+    DumpContext(int32_t uid, int32_t pid, int outFd)
+        : requestInfo_(std::make_shared<RequestInfo>(RequestInfo{uid, pid, UniqueFd(outFd)})),
+          dumperOpts_(std::make_shared<DumperOptions>()) {}
     ~DumpContext() = default;
 
     std::shared_ptr<RequestInfo> GetRequestInfo() const { return requestInfo_; }

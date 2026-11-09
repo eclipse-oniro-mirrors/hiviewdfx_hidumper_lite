@@ -59,7 +59,7 @@ int RunHidumperCmd(std::initializer_list<const char *> args, std::string &out)
         out.append(buffer, static_cast<size_t>(readSize));
     }
     close(fd);
-    remove(capturePath);
+    EXPECT_EQ(0, remove(capturePath));
     return static_cast<int>(ret);
 }
 } // namespace
@@ -126,7 +126,7 @@ TEST(LiteUtilsTest, FileEx)
     close(fd);
     EXPECT_TRUE(LoadStringFromFile(path, loaded));
     EXPECT_EQ(loaded, "written-by-fd");
-    remove(path.c_str());
+    EXPECT_EQ(0, remove(path.c_str()));
 }
 
 /**
@@ -191,7 +191,7 @@ TEST(TaskEnableConfigTest, ParseAndDefault)
     EXPECT_TRUE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::DUMP_CPU_FREQ_INFO));
     EXPECT_FALSE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::WRITE_KERNEL_MEM_INFO));
     EXPECT_TRUE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::WRITE_CPU_FREQ_INFO));
-    remove(TEST_CONFIG_PATH.c_str());
+    EXPECT_EQ(0, remove(TEST_CONFIG_PATH.c_str()));
 }
 
 /**

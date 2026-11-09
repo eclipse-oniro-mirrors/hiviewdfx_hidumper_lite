@@ -58,10 +58,4 @@ protected:
 } // namespace HiviewDFX
 } // namespace OHOS
 
-#define DECLARE_DELAYED_REF_SINGLETON(MyClass) \
-private: \
-    friend DelayedRefSingleton<MyClass>; \
-    ~MyClass(); \
-    MyClass()
-
 #endif // HIDUMPER_LITE_SINGLETON_H

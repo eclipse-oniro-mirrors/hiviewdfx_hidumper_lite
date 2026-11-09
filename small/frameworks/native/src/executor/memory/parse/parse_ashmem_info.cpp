@@ -20,14 +20,11 @@
 #include "hilog_wrapper.h"
 #include "util/file_utils.h"
 #include "string_ex.h"
-#include "securec.h"
 
 using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 const int START_POS = 1;
-constexpr size_t PROCESS_NAME_MAX_LEN = 128;
-constexpr size_t PHYSICAL_SIZE_MAX_LEN = 64;
 ParseAshmemInfo::ParseAshmemInfo()
 {
 }
@@ -45,15 +42,21 @@ bool ParseAshmemInfo::UpdateAshmemOverviewMap(
         tempLine.erase(lastNonSpace + START_POS);
     }
 
-    char processName[PROCESS_NAME_MAX_LEN] = {0};
-    char numberStr[PHYSICAL_SIZE_MAX_LEN] = {0};
-    int ret = sscanf_s(tempLine.c_str(), "%*[^[][%127[^]]] %*[^p]physical size is %63s",
-        processName, PROCESS_NAME_MAX_LEN, numberStr, PHYSICAL_SIZE_MAX_LEN);
-    if (ret != 2) { // 2: expect to parse 2 items
+    const std::string sizePrefix = "physical size is ";
+    size_t leftBracket = tempLine.find('[');
+    size_t rightBracket = tempLine.find(']', leftBracket);
+    size_t sizePos = tempLine.find(sizePrefix);
+    if (leftBracket == std::string::npos || rightBracket == std::string::npos ||
+        sizePos == std::string::npos || sizePos < rightBracket) {
         DUMPER_HILOGE(MODULE_SERVICE, "tempLine Failed to parse line: %{public}s.", tempLine.c_str());
         return false;
     }
-    std::string physicalSize = std::string(numberStr);
+    std::string processName = tempLine.substr(leftBracket + 1, rightBracket - leftBracket - 1);
+    std::string physicalSize = tempLine.substr(sizePos + sizePrefix.size());
+    size_t sizeEnd = physicalSize.find(' ');
+    if (sizeEnd != std::string::npos) {
+        physicalSize = physicalSize.substr(0, sizeEnd);
+    }
     if (!IsNumericStr(physicalSize)) {
         DUMPER_HILOGE(MODULE_SERVICE, "physicalSize is not number, physicalSize:%{public}s.", physicalSize.c_str());
         return false;
@@ -63,7 +66,7 @@ bool ParseAshmemInfo::UpdateAshmemOverviewMap(
         DUMPER_HILOGE(MODULE_SERVICE, "physicalSize is too big, physicalSize:%{public}s.", physicalSize.c_str());
         return false;
     }
-    ashmemOverviewMap[std::string(processName)] = pss;
+    ashmemOverviewMap[processName] = pss;
     return true;
 }
 

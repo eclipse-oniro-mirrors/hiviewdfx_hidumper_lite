@@ -17,6 +17,7 @@
 
 #include <cerrno>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -225,7 +226,7 @@ private:
         const char* start = text_.c_str() + pos_;
         char* end = nullptr;
         double number = strtod(start, &end);
-        if (end == start || errno == ERANGE) {
+        if (end == start || errno == ERANGE || std::isnan(number)) {
             return false;
         }
         pos_ = static_cast<size_t>(end - text_.c_str());

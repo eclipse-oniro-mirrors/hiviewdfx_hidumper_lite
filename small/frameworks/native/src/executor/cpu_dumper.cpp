@@ -39,7 +39,7 @@ const std::string PROC_STAT_PATH = "/proc/stat";
 const std::string PROC_LOADAVG_PATH = "/proc/loadavg";
 const std::string CPU_STR = "cpu";
 const int TOTAL_CPU_ID = -1;
-const int INVALID_PID = -1;
+const int invalidPid = -1;
 constexpr int SECOND_TO_MILLISECONDS = 1000;
 constexpr int PROC_STAT_FIELD_STATE = 3;
 constexpr int PROC_STAT_FIELD_MINFLT = 10;
@@ -196,6 +196,103 @@ bool SortProcUsage(const ProcStat &left, double leftTotal, double leftUser, doub
     }
     return rightPid.compare(leftPid) < 0;
 }
+
+struct ProcUsage {
+    ProcStat stat;
+    double totalUsage;
+    double userUsage;
+    double sysUsage;
+};
+
+bool SampleCpuUsage(int pid, std::map<int, CpuJiffies> &cpuFirst, std::map<int, CpuJiffies> &cpuSecond,
+                    std::map<int, ProcStat> &procFirst, std::map<int, ProcStat> &procSecond, uint64_t &total)
+{
+    if (!ReadCpuJiffies(cpuFirst) || !ReadAllProcStats(procFirst)) {
+        return false;
+    }
+    usleep(SAMPLE_INTERVAL_US);
+    if (!ReadCpuJiffies(cpuSecond)) {
+        return false;
+    }
+    if (pid > 0) {
+        ProcStat stat;
+        if (!ReadProcStat(pid, stat)) {
+            return false;
+        }
+        procSecond[pid] = stat;
+    } else if (!ReadAllProcStats(procSecond)) {
+        return false;
+    }
+    const CpuJiffies &prev = cpuFirst[TOTAL_CPU_ID];
+    const CpuJiffies &cur = cpuSecond[TOTAL_CPU_ID];
+    total = cur.Total() - prev.Total();
+    return total != 0;
+}
+
+bool PushUsageHeaderLines(std::vector<std::vector<std::string>> &datas, const std::string &startTime,
+                          const std::string &endTime, const CpuJiffies &prev, const CpuJiffies &cur, uint64_t total)
+{
+    std::vector<std::string> loadLine;
+    loadLine.push_back(ReadLoadAvg());
+    datas.push_back(loadLine);
+    std::vector<std::string> timeLine;
+    timeLine.push_back("CPU usage from " + startTime + " to " + endTime);
+    datas.push_back(timeLine);
+    double userSpace = PERCENT_MULT * static_cast<double>(cur.user + cur.nice - prev.user - prev.nice) / total;
+    double sysSpace = PERCENT_MULT * static_cast<double>(cur.system - prev.system) / total;
+    double ioWait = PERCENT_MULT * static_cast<double>(cur.iowait - prev.iowait) / total;
+    double irq = PERCENT_MULT * static_cast<double>(cur.irq + cur.softirq - prev.irq - prev.softirq) / total;
+    double idle = PERCENT_MULT * static_cast<double>(cur.idle - prev.idle) / total;
+    char totalLine[PROC_CPU_LENGTH] = {0};
+    if (sprintf_s(totalLine, sizeof(totalLine), TOTAL_CPU_LINE,
+        userSpace + sysSpace, userSpace, sysSpace, ioWait, irq, idle) < 0) {
+        return false;
+    }
+    std::vector<std::string> totalVec;
+    totalVec.push_back(totalLine);
+    datas.push_back(totalVec);
+    return true;
+}
+
+void PushProcDetailLines(std::vector<std::vector<std::string>> &datas, const std::map<int, ProcStat> &procFirst,
+                         const std::map<int, ProcStat> &procSecond, uint64_t total)
+{
+    std::vector<ProcUsage> usages;
+    for (const auto &item : procSecond) {
+        auto it = procFirst.find(item.first);
+        if (it == procFirst.end()) {
+            continue;
+        }
+        ProcUsage usage;
+        usage.stat = item.second;
+        usage.userUsage = PERCENT_MULT * static_cast<double>(item.second.utime - it->second.utime) / total;
+        usage.sysUsage = PERCENT_MULT * static_cast<double>(item.second.stime - it->second.stime) / total;
+        usage.totalUsage = usage.userUsage + usage.sysUsage;
+        usages.push_back(usage);
+    }
+    std::sort(usages.begin(), usages.end(), [](const ProcUsage &left, const ProcUsage &right) {
+        return SortProcUsage(left.stat, left.totalUsage, left.userUsage, left.sysUsage,
+                             right.stat, right.totalUsage, right.userUsage, right.sysUsage);
+    });
+    std::vector<std::string> detailLine;
+    detailLine.push_back(PROC_DETAILS_HEADER);
+    datas.push_back(detailLine);
+    std::vector<std::string> tableLine;
+    tableLine.push_back(PROC_TABLE_HEADER);
+    datas.push_back(tableLine);
+    for (const auto &usage : usages) {
+        char row[PROC_CPU_LENGTH] = {0};
+        if (sprintf_s(row, sizeof(row), PROC_TABLE_ROW, std::to_string(usage.stat.pid).c_str(),
+            usage.totalUsage, usage.userUsage, usage.sysUsage,
+            std::to_string(usage.stat.minflt).c_str(), std::to_string(usage.stat.majflt).c_str(),
+            usage.stat.comm.c_str()) < 0) {
+            continue;
+        }
+        std::vector<std::string> rowVec;
+        rowVec.push_back(row);
+        datas.push_back(rowVec);
+    }
+}
 } // namespace
 
 CPUDumper::CPUDumper()
@@ -239,94 +336,16 @@ bool CPUDumper::DumpCpuUsage(int pid)
     std::map<int, CpuJiffies> cpuSecond;
     std::map<int, ProcStat> procFirst;
     std::map<int, ProcStat> procSecond;
-    if (!ReadCpuJiffies(cpuFirst) || !ReadAllProcStats(procFirst)) {
-        return false;
-    }
-    usleep(SAMPLE_INTERVAL_US);
-    if (!ReadCpuJiffies(cpuSecond)) {
-        return false;
-    }
-    if (pid > 0) {
-        ProcStat stat;
-        if (!ReadProcStat(pid, stat)) {
-            return false;
-        }
-        procSecond[pid] = stat;
-    } else if (!ReadAllProcStats(procSecond)) {
+    uint64_t total = 0;
+    if (!SampleCpuUsage(pid, cpuFirst, cpuSecond, procFirst, procSecond, total)) {
         return false;
     }
     endTime_ = GetCurrTime();
-    const CpuJiffies &prev = cpuFirst[TOTAL_CPU_ID];
-    const CpuJiffies &cur = cpuSecond[TOTAL_CPU_ID];
-    uint64_t total = cur.Total() - prev.Total();
-    if (total == 0) {
+    if (!PushUsageHeaderLines(*dumpCPUDatas_, startTime_, endTime_, cpuFirst[TOTAL_CPU_ID],
+        cpuSecond[TOTAL_CPU_ID], total)) {
         return false;
     }
-
-    std::vector<std::string> loadLine;
-    loadLine.push_back(ReadLoadAvg());
-    dumpCPUDatas_->push_back(loadLine);
-
-    std::vector<std::string> timeLine;
-    timeLine.push_back("CPU usage from " + startTime_ + " to " + endTime_);
-    dumpCPUDatas_->push_back(timeLine);
-
-    double userSpace = PERCENT_MULT * static_cast<double>(cur.user + cur.nice - prev.user - prev.nice) / total;
-    double sysSpace = PERCENT_MULT * static_cast<double>(cur.system - prev.system) / total;
-    double ioWait = PERCENT_MULT * static_cast<double>(cur.iowait - prev.iowait) / total;
-    double irq = PERCENT_MULT * static_cast<double>(cur.irq + cur.softirq - prev.irq - prev.softirq) / total;
-    double idle = PERCENT_MULT * static_cast<double>(cur.idle - prev.idle) / total;
-    char totalLine[PROC_CPU_LENGTH] = {0};
-    if (sprintf_s(totalLine, sizeof(totalLine), TOTAL_CPU_LINE,
-        userSpace + sysSpace, userSpace, sysSpace, ioWait, irq, idle) < 0) {
-        return false;
-    }
-    std::vector<std::string> totalVec;
-    totalVec.push_back(totalLine);
-    dumpCPUDatas_->push_back(totalVec);
-
-    struct ProcUsage {
-        ProcStat stat;
-        double totalUsage;
-        double userUsage;
-        double sysUsage;
-    };
-    std::vector<ProcUsage> usages;
-    for (const auto &item : procSecond) {
-        auto it = procFirst.find(item.first);
-        if (it == procFirst.end()) {
-            continue;
-        }
-        ProcUsage usage;
-        usage.stat = item.second;
-        usage.userUsage = PERCENT_MULT * static_cast<double>(item.second.utime - it->second.utime) / total;
-        usage.sysUsage = PERCENT_MULT * static_cast<double>(item.second.stime - it->second.stime) / total;
-        usage.totalUsage = usage.userUsage + usage.sysUsage;
-        usages.push_back(usage);
-    }
-    std::sort(usages.begin(), usages.end(), [](const ProcUsage &left, const ProcUsage &right) {
-        return SortProcUsage(left.stat, left.totalUsage, left.userUsage, left.sysUsage,
-                             right.stat, right.totalUsage, right.userUsage, right.sysUsage);
-    });
-
-    std::vector<std::string> detailLine;
-    detailLine.push_back(PROC_DETAILS_HEADER);
-    dumpCPUDatas_->push_back(detailLine);
-    std::vector<std::string> tableLine;
-    tableLine.push_back(PROC_TABLE_HEADER);
-    dumpCPUDatas_->push_back(tableLine);
-    for (const auto &usage : usages) {
-        char row[PROC_CPU_LENGTH] = {0};
-        if (sprintf_s(row, sizeof(row), PROC_TABLE_ROW, std::to_string(usage.stat.pid).c_str(),
-            usage.totalUsage, usage.userUsage, usage.sysUsage,
-            std::to_string(usage.stat.minflt).c_str(), std::to_string(usage.stat.majflt).c_str(),
-            usage.stat.comm.c_str()) < 0) {
-            continue;
-        }
-        std::vector<std::string> rowVec;
-        rowVec.push_back(row);
-        dumpCPUDatas_->push_back(rowVec);
-    }
+    PushProcDetailLines(*dumpCPUDatas_, procFirst, procSecond, total);
     return true;
 }
 
