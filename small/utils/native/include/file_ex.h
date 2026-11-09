@@ -38,22 +38,13 @@ inline bool LoadStringFromFile(const std::string& filePath, std::string& content
 
 inline bool SaveStringToFd(int fd, const std::string& content)
 {
-    if (fd < 0) {
-        return false;
-    }
     size_t total = 0;
     while (total < content.size()) {
         ssize_t ret = write(fd, content.data() + total, content.size() - total);
-        if (ret < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
+        if (ret <= 0 && !(ret < 0 && errno == EINTR)) {
             return false;
         }
-        if (ret == 0) {
-            return false;
-        }
-        total += static_cast<size_t>(ret);
+        total += (ret > 0) ? static_cast<size_t>(ret) : 0;
     }
     return true;
 }

@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <limits.h>
+#include <climits>
 
 #include <sys/prctl.h>
 #include <sys/resource.h>
@@ -37,7 +37,9 @@ namespace OHOS {
 namespace HiviewDFX {
 void DumpUtils::IgnorePipeQuit()
 {
-    signal(SIGPIPE, SIG_IGN); // protect from pipe quit
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+        DUMPER_HILOGE(MODULE_COMMON, "signal SIGPIPE IGN failed, errno=%{public}d", errno);
+    }
 }
 
 void DumpUtils::IgnoreStdoutCache()
@@ -47,12 +49,12 @@ void DumpUtils::IgnoreStdoutCache()
 
 void DumpUtils::IgnoreOom()
 {
-    setpriority(PRIO_PROCESS, 0, TOP_PRIORITY); // protect from OOM
+    setpriority(PRIO_PROCESS, 0, topPriority); // protect from OOM
 }
 
 void DumpUtils::SetAdj(int adj)
 {
-    int fd = FdToWrite(FILE_CUR_OOM_ADJ);
+    int fd = FdToWrite(fileCurOomAdj);
     if (fd < 0) {
         return;
     }
@@ -66,7 +68,7 @@ void DumpUtils::BoostPriority()
     IgnoreOom();
     IgnorePipeQuit();
     IgnoreStdoutCache();
-    SetAdj(TOP_OOM_ADJ);
+    SetAdj(topOomAdj);
 }
 
 std::string DumpUtils::ErrnoToMsg(const int &error)

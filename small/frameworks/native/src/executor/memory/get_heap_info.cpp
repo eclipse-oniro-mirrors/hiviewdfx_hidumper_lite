@@ -33,7 +33,7 @@ void GetHeapInfo::GetMallocHeapInfo(const int& pid, std::unique_ptr<MallHeapInfo
     DUMPER_HILOGI(MODULE_SERVICE, "GetMallocHeapInfo pid:%{public}d begin.", pid);
     mallocHeapInfo->size = 0;
     mallocHeapInfo->alloc = 0;
-    mallocHeapInfo->free = 0;
+    mallocHeapInfo->freeSize = 0;
     DUMPER_HILOGI(MODULE_SERVICE, "GetMallocHeapInfo pid:%{public}d end, success!", pid);
 }
 } // namespace HiviewDFX

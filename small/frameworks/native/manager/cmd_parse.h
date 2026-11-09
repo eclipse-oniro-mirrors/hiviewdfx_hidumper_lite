@@ -27,9 +27,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 class CmdParse final : public DelayedRefSingleton<CmdParse> {
-    DECLARE_DELAYED_REF_SINGLETON(CmdParse)
+    DECLARE_DELAYED_REF_SINGLETON(CmdParse);
 public:
-    DISALLOW_COPY_AND_MOVE(CmdParse);
     DumpStatus Parse(int argc, char *argv[], DumpContext& dumpContext);
 private:
     DumpStatus CheckArgs(int argc, char* argv[]);

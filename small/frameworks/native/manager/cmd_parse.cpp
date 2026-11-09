@@ -36,12 +36,12 @@ const std::string ARGUMENT_ERROR_MSG = "hidumper: option requires an argument: "
 const std::string INVALID_ARG_MSG = "hidumper: invalid arg: ";
 const std::string PID_ERROR_MSG = "hidumper: No such process: ";
 
-static struct option LONG_OPTIONS[] = {
-    {"cpufreq", no_argument, 0, 0},
-    {"cpuusage", optional_argument, 0, 0},
-    {"mem", optional_argument, 0, 0},
-    {"prune", no_argument, 0, 0},
-    {0, 0, 0, 0}
+static struct option g_longOptions[] = {
+    {"cpufreq", no_argument, nullptr, 0},
+    {"cpuusage", optional_argument, nullptr, 0},
+    {"mem", optional_argument, nullptr, 0},
+    {"prune", no_argument, nullptr, 0},
+    {nullptr, 0, nullptr, 0}
 };
 
 void PrintHelpInfo(DumpContext& dumpContext)
@@ -130,17 +130,13 @@ DumpStatus CmdParse::CmdParseHelper(int argc, char *argv[], DumpContext& dumpCon
     opterr = 0; // getopt not show error info
     const char optStr[] = "-hpt:";
 
-    while (true) {
-        int optionIndex = 0;
-        int c = getopt_long(argc, argv, optStr, LONG_OPTIONS, &optionIndex);
-        if (c == -1) {
-            break;
-        }
-
+    int optionIndex = 0;
+    int c = getopt_long(argc, argv, optStr, g_longOptions, &optionIndex);
+    while (c != -1) {
         DumpStatus status;
         switch (c) {
             case 0:
-                status = ParseLongCmdOption(dumpContext, LONG_OPTIONS, optionIndex);
+                status = ParseLongCmdOption(dumpContext, g_longOptions, optionIndex);
                 break;
             case 'h':
                 PrintHelpInfo(dumpContext);
@@ -155,6 +151,8 @@ DumpStatus CmdParse::CmdParseHelper(int argc, char *argv[], DumpContext& dumpCon
         if (status != DumpStatus::DUMP_OK) {
             return status;
         }
+        optionIndex = 0;
+        c = getopt_long(argc, argv, optStr, g_longOptions, &optionIndex);
     }
     if (CheckProcessAlive(dumpContext) != DumpStatus::DUMP_OK) {
         return DumpStatus::DUMP_FAIL;

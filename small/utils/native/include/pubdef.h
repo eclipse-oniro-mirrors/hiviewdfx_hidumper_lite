@@ -15,8 +15,14 @@
 #ifndef HIDUMPER_LITE_PUBDEF_H
 #define HIDUMPER_LITE_PUBDEF_H
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-#endif
+#include <cstddef>
+
+namespace OHOS {
+template<typename T, std::size_t N>
+constexpr std::size_t ArraySize(const T (&array)[N])
+{
+    return N;
+}
+} // namespace OHOS
 
 #endif // HIDUMPER_LITE_PUBDEF_H

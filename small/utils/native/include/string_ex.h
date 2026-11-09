@@ -39,16 +39,11 @@ inline bool IsNumericStr(const std::string& str)
 
 inline bool StrToInt(const std::string& str, int& value)
 {
-    if (str.empty()) {
-        return false;
-    }
     errno = 0;
     char* end = nullptr;
     long long result = strtoll(str.c_str(), &end, 10);
-    if (errno != 0 || end == nullptr || end == str.c_str() || *end != '\0') {
-        return false;
-    }
-    if (result < INT_MIN || result > INT_MAX) {
+    if (str.empty() || errno != 0 || end == str.c_str() || *end != '\0' ||
+        result < INT_MIN || result > INT_MAX) {
         return false;
     }
     value = static_cast<int>(result);
@@ -57,21 +52,19 @@ inline bool StrToInt(const std::string& str, int& value)
 
 inline std::string TrimStr(const std::string& str, const char cTrim = ' ')
 {
-    if (str.empty()) {
-        return str;
-    }
-    size_t start = 0;
-    size_t end = str.size() - 1;
-    while (start <= end && str[start] == cTrim) {
-        start++;
-    }
-    while (end >= start && str[end] == cTrim) {
-        end--;
-    }
-    if (start > end) {
+    size_t start = str.find_first_not_of(cTrim);
+    if (start == std::string::npos) {
         return "";
     }
+    size_t end = str.find_last_not_of(cTrim);
     return str.substr(start, end - start + 1);
+}
+
+inline void PushSplitPart(std::vector<std::string>& strs, const std::string& part, bool canEmpty)
+{
+    if (!part.empty() || canEmpty) {
+        strs.push_back(part);
+    }
 }
 
 inline void SplitStr(const std::string& str, const std::string& sep, std::vector<std::string>& strs,
@@ -79,23 +72,13 @@ inline void SplitStr(const std::string& str, const std::string& sep, std::vector
 {
     strs.clear();
     std::string strTmp = needTrim ? TrimStr(str) : str;
-    std::string strPart;
-    while (true) {
-        std::string::size_type pos = strTmp.find(sep);
-        if (std::string::npos == pos || sep.empty()) {
-            strPart = needTrim ? TrimStr(strTmp) : strTmp;
-            if (!strPart.empty() || canEmpty) {
-                strs.push_back(strPart);
-            }
-            break;
-        } else {
-            strPart = needTrim ? TrimStr(strTmp.substr(0, pos)) : strTmp.substr(0, pos);
-            if (!strPart.empty() || canEmpty) {
-                strs.push_back(strPart);
-            }
-            strTmp = strTmp.substr(sep.size() + pos, strTmp.size() - sep.size() - pos);
-        }
+    std::string::size_type pos = strTmp.find(sep);
+    while (pos != std::string::npos && !sep.empty()) {
+        PushSplitPart(strs, needTrim ? TrimStr(strTmp.substr(0, pos)) : strTmp.substr(0, pos), canEmpty);
+        strTmp = strTmp.substr(sep.size() + pos, strTmp.size() - sep.size() - pos);
+        pos = strTmp.find(sep);
     }
+    PushSplitPart(strs, needTrim ? TrimStr(strTmp) : strTmp, canEmpty);
 }
 
 inline bool IsSubStr(const std::string& str, const std::string& sub)

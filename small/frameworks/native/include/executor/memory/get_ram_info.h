@@ -27,7 +27,7 @@ public:
 
     struct Ram {
         uint64_t total {0};
-        uint64_t free {0};
+        uint64_t freeSize {0};
         uint64_t used {0};
         uint64_t totalPss {0};
         uint64_t kernelUsed {0};

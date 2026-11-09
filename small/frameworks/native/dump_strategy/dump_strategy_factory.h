@@ -33,8 +33,7 @@ struct StrategyConfig {
 };
 
 class DumpStrategyFactory : public DelayedRefSingleton<DumpStrategyFactory> {
-    DECLARE_DELAYED_REF_SINGLETON(DumpStrategyFactory)
-    DISALLOW_COPY_AND_MOVE(DumpStrategyFactory);
+    DECLARE_DELAYED_REF_SINGLETON(DumpStrategyFactory);
 public:
     DumpStatus CollectRootTasks(const DumpContext& context, std::vector<TaskId>& rootTasks);
 

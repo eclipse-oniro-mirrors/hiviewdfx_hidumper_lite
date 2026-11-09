@@ -22,8 +22,7 @@ namespace OHOS {
 namespace HiviewDFX {
 
 class DumpManagerService final : public DelayedRefSingleton<DumpManagerService> {
-    DECLARE_DELAYED_REF_SINGLETON(DumpManagerService)
-    DISALLOW_COPY_AND_MOVE(DumpManagerService);
+    DECLARE_DELAYED_REF_SINGLETON(DumpManagerService);
 public:
     // Used for dump request, called by the hidumper command line entry directly.
     int32_t Request(int argc, char *argv[], int outfd);

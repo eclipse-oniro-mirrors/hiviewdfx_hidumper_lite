@@ -1,4 +1,3 @@
-#include <limits.h>
 /*
 * Copyright (C) 2021 Huawei Device Co., Ltd.
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +13,7 @@
 * limitations under the License.
 */
 #include <chrono>
+#include <climits>
 #include <filesystem>
 #include <unistd.h>
 #include <sys/stat.h>

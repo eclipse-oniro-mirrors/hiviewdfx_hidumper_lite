@@ -165,7 +165,7 @@ GetRamInfo::Ram GetRamInfo::GetRam(const GroupMap &smapsInfo, const ValueMap &me
 
     ram.total = GetTotalRam(meminfo);
     ram.used = GetUsedRam(smapsInfo, meminfo, ram);
-    ram.free = GetFreeRam(meminfo, ram);
+    ram.freeSize = GetFreeRam(meminfo, ram);
     ram.lost = GetLostRam(smapsInfo, meminfo);
 
     return ram;

@@ -23,7 +23,7 @@ namespace HiviewDFX {
 struct MallHeapInfo {
     uint64_t size;
     uint64_t alloc;
-    uint64_t free;
+    uint64_t freeSize;
 };
 class GetHeapInfo {
 public:

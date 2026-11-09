@@ -64,6 +64,7 @@ constexpr int ONE_STAR = 1;
 constexpr int APP_UID = 20000;
 constexpr int LINE_SPACING = 6;
 constexpr int DMABUF_MAX_WIDTH = 33;
+constexpr int METRIC_NAME_WIDTH = 20;
 
 MemoryInfo::MemoryInfo()
 {
@@ -338,7 +339,7 @@ void AppendMetricRow(MemoryInfo::StringMatrix result, const std::string& name, u
 {
     vector<string> row;
     string title = name + ":";
-    StringUtils::GetInstance().SetWidth(20, ' ', false, title);
+    StringUtils::GetInstance().SetWidth(METRIC_NAME_WIDTH, ' ', false, title);
     row.push_back(title + to_string(value) + MemoryUtil::GetInstance().KB_UNIT_);
     result->push_back(row);
 }
@@ -527,7 +528,7 @@ void MemoryInfo::GetRamUsage(const GroupMap &smapsinfos, const ValueMap &meminfo
 
     string freeTitle = "Free RAM:";
     StringUtils::GetInstance().SetWidth(RAM_WIDTH_, BLANK_, false, freeTitle);
-    SaveStringToFd(rawParamFd_, freeTitle + AddKbUnit(ram.free) +
+    SaveStringToFd(rawParamFd_, freeTitle + AddKbUnit(ram.freeSize) +
         " (" + to_string(ram.cachedInfo) + " cached + " + to_string(ram.freeInfo) + " free)\n");
 
     string usedTitle = "Used RAM:";

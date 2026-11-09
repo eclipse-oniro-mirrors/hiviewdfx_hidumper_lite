@@ -29,9 +29,8 @@ namespace OHOS {
 namespace HiviewDFX {
 
 class TaskEnableConfig : public DelayedRefSingleton<TaskEnableConfig> {
-    DECLARE_DELAYED_REF_SINGLETON(TaskEnableConfig)
+    DECLARE_DELAYED_REF_SINGLETON(TaskEnableConfig);
 public:
-    DISALLOW_COPY_AND_MOVE(TaskEnableConfig);
     DumpStatus LoadFromConfig(const std::string& configPath = DEFAULT_CONFIG_PATH);
     bool IsTaskEnabled(TaskId taskId) const;
     bool IsConfigLoaded() const { return configLoaded_; }

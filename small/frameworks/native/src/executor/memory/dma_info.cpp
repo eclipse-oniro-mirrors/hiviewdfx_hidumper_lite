@@ -38,12 +38,12 @@ void DmaInfo::CreateDmaInfo(const string &str)
 {
     /*
         Dma-buf objects usage of processes:
-        Process          pid              fd               size_bytes       ino              exp_pid          exp_task_comm    buf_name          exp_name
-        composer_host    552              11               3686400          7135             552              composer_host    NULL      rockchipdrm
-        composer_host    552              18               3686400          30235            543              allocator_host   NULL      rockchipdrm
+        Process          pid   fd   size_bytes  ino    exp_pid  exp_task_comm   buf_name   exp_name
+        composer_host    552   11   3686400     7135   552      composer_host   NULL       rockchipdrm
+        composer_host    552   18   3686400     30235  543      allocator_host  NULL       rockchipdrm
         Total dmabuf size of composer_host: 29491200 bytes
-        render_service   575              28               3686400          28052            543              allocator_host   NULL      rockchipdrm
-        render_service   575              31               3686400          31024            543              allocator_host   NULL      rockchipdrm
+        render_service   575   28   3686400     28052  543      allocator_host  NULL       rockchipdrm
+        render_service   575   31   3686400     31024  543      allocator_host  NULL       rockchipdrm
         Total dmabuf size of render_service: 35520512 bytes
     */
     MemInfoData::DmaInfo dmaInfo;

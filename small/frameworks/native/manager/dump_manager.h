@@ -25,8 +25,7 @@ namespace OHOS {
 namespace HiviewDFX {
 
 class DumpManager : public DelayedRefSingleton<DumpManager> {
-    DECLARE_DELAYED_REF_SINGLETON(DumpManager)
-    DISALLOW_COPY_AND_MOVE(DumpManager);
+    DECLARE_DELAYED_REF_SINGLETON(DumpManager);
 public:
     DumpStatus StartDump(int argc, char *argv[], DumpContext& context);
 };

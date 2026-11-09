@@ -40,11 +40,11 @@ public:
     static bool CheckProcessAlive(uint32_t pid);
 
     static bool PathIsValid(const std::string &path);
-    static constexpr int TOP_PRIORITY = -20;
-    static constexpr int TOP_OOM_ADJ = -1000;
-    static constexpr char FILE_CUR_OOM_ADJ[] = "/proc/self/oom_score_adj";
-    static constexpr auto& SPACE = " ";
-    static const int INVALID_PID = -1;
+    static constexpr int topPriority = -20;
+    static constexpr int topOomAdj = -1000;
+    static constexpr char fileCurOomAdj[] = "/proc/self/oom_score_adj";
+    static constexpr auto& space = " ";
+    static const int invalidPid = -1;
 private:
     static std::string ErrnoToMsg(const int &error);
 };

@@ -39,7 +39,10 @@ const std::string PROC_STAT_PATH = "/proc/stat";
 const std::string PROC_LOADAVG_PATH = "/proc/loadavg";
 const std::string CPU_STR = "cpu";
 const int TOTAL_CPU_ID = -1;
-const int INVALID_PID = -1;
+const int invalidPid = -1;
+constexpr int SECOND_TO_MILLISECONDS = 1000;
+constexpr int PROC_STAT_FIELD_STATE = 3;
+constexpr int PROC_STAT_FIELD_MINFLT = 10;
 
 const char *PROC_DETAILS_HEADER = "Details of Processes:";
 const char *PROC_TABLE_HEADER =
@@ -68,12 +71,16 @@ struct CpuJiffies {
 struct ProcStat {
     int pid = 0;
     std::string comm;
-    uint64_t minflt = 0;    uint64_t majflt = 0;    uint64_t utime = 0;    uint64_t stime = 0;};
+    uint64_t minflt = 0;
+    uint64_t majflt = 0;
+    uint64_t utime = 0;
+    uint64_t stime = 0;
+};
 
 std::string GetCurrTime()
 {
     std::string time;
-    DumpCommonUtils::GetDateAndTime(DumpCommonUtils::GetMilliseconds() / 1000, time);
+    DumpCommonUtils::GetDateAndTime(DumpCommonUtils::GetMilliseconds() / SECOND_TO_MILLISECONDS, time);
     return time;
 }
 
@@ -88,7 +95,8 @@ bool ReadCpuJiffies(std::map<int, CpuJiffies> &jiffies)
     jiffies.clear();
     while (std::getline(file, line)) {
         if (line.compare(0, CPU_STR.size(), CPU_STR) != 0) {
-            break;        }
+            break;
+        }
         std::istringstream iss(line);
         std::string cpuName;
         CpuJiffies item;
@@ -120,13 +128,15 @@ bool ReadProcStat(int pid, ProcStat &stat)
         return false;
     }
     std::istringstream iss(statLine.substr(closeBracket + 1));
-    int fieldNo = 3;    std::string dummy;
-    while (fieldNo < 10) {        iss >> dummy;
+    int fieldNo = PROC_STAT_FIELD_STATE;
+    std::string dummy;
+    while (fieldNo < PROC_STAT_FIELD_MINFLT) {
+        iss >> dummy;
         fieldNo++;
     }
     stat.pid = pid;
     stat.comm = statLine.substr(openBracket + 1, closeBracket - openBracket - 1);
-    iss >> stat.minflt >> stat.majflt >> dummy >> dummy >> dummy >> stat.utime >> stat.stime;
+    iss >> stat.minflt >> dummy >> stat.majflt >> dummy >> stat.utime >> stat.stime;
     return true;
 }
 
@@ -284,7 +294,8 @@ bool CPUDumper::DumpCpuUsage(int pid)
     for (const auto &item : procSecond) {
         auto it = procFirst.find(item.first);
         if (it == procFirst.end()) {
-            continue;        }
+            continue;        
+        }
         ProcUsage usage;
         usage.stat = item.second;
         usage.userUsage = PERCENT_MULT * static_cast<double>(item.second.utime - it->second.utime) / total;

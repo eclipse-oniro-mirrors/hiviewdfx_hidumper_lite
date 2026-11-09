@@ -29,6 +29,8 @@ public:
 
     Singleton(const Singleton&) = delete;
     Singleton& operator=(const Singleton&) = delete;
+    Singleton(Singleton&&) = delete;
+    Singleton& operator=(Singleton&&) = delete;
 
 protected:
     Singleton() = default;
@@ -46,6 +48,8 @@ public:
 
     DelayedRefSingleton(const DelayedRefSingleton&) = delete;
     DelayedRefSingleton& operator=(const DelayedRefSingleton&) = delete;
+    DelayedRefSingleton(DelayedRefSingleton&&) = delete;
+    DelayedRefSingleton& operator=(DelayedRefSingleton&&) = delete;
 
 protected:
     DelayedRefSingleton() = default;
@@ -54,16 +58,10 @@ protected:
 } // namespace HiviewDFX
 } // namespace OHOS
 
-#define DISALLOW_COPY_AND_MOVE(MyClass) \
-    MyClass(const MyClass&) = delete; \
-    MyClass& operator=(const MyClass&) = delete; \
-    MyClass(MyClass&&) = delete; \
-    MyClass& operator=(MyClass&&) = delete;
-
 #define DECLARE_DELAYED_REF_SINGLETON(MyClass) \
 private: \
     friend DelayedRefSingleton<MyClass>; \
     ~MyClass(); \
-    MyClass();
+    MyClass()
 
 #endif // HIDUMPER_LITE_SINGLETON_H

@@ -14,7 +14,7 @@
  */
 #include "writer_utils.h"
 #include <unistd.h>
-#include <limits.h>
+#include <climits>
 #include <fcntl.h>
 #include <fstream>
 #include <string>

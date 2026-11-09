@@ -50,9 +50,8 @@ struct CachedTaskTopo {
 };
 
 class TaskControl : public DelayedRefSingleton<TaskControl> {
-    DECLARE_DELAYED_REF_SINGLETON(TaskControl)
+    DECLARE_DELAYED_REF_SINGLETON(TaskControl);
 public:
-    DISALLOW_COPY_AND_MOVE(TaskControl);
 
     DumpStatus ExecuteTask(DataInventory& dataInventory,
                            const std::vector<TaskId>& taskIds, const DumpContext& dumpContext);

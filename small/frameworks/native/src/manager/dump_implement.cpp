@@ -33,11 +33,11 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static struct option LONG_OPTIONS[] = {{"cpufreq", no_argument, 0, 0},
-    {"cpuusage", optional_argument, 0, 0},
-    {"mem", optional_argument, 0, 0},
-    {"prune", no_argument, 0, 0},
-    {0, 0, 0, 0}};
+static struct option g_longOptions[] = {{"cpufreq", no_argument, nullptr, 0},
+    {"cpuusage", optional_argument, nullptr, 0},
+    {"mem", optional_argument, nullptr, 0},
+    {"prune", no_argument, nullptr, 0},
+    {nullptr, 0, nullptr, 0}};
 
 DumpImplement::DumpImplement()
 {
@@ -169,15 +169,12 @@ DumpStatus DumpImplement::CmdParseWithParameter(int argc, char *argv[], DumperOp
     optind = 0; // reset getopt_long
     opterr = 0; // getopt not show error info
     const char optStr[] = "-hpt:";
-    bool loop = true;
-    while (loop) {
-        int optionIndex = 0;
-        int c = getopt_long(argc, argv, optStr, LONG_OPTIONS, &optionIndex);
+    int optionIndex = 0;
+    int c = getopt_long(argc, argv, optStr, g_longOptions, &optionIndex);
+    while (c != -1) {
         DUMPER_HILOGD(MODULE_COMMON, "debug|getopt_long(), c=%{public}d, optind=%{public}d", c, optind);
-        if (c == -1) {
-            break;
-        } else if (c == 0) {
-            DumpStatus status = ParseLongCmdOption(opts, LONG_OPTIONS, optionIndex);
+        if (c == 0) {
+            DumpStatus status = ParseLongCmdOption(opts, g_longOptions, optionIndex);
             if (status != DumpStatus::DUMP_OK) {
                 return status;
             }
@@ -193,6 +190,8 @@ DumpStatus DumpImplement::CmdParseWithParameter(int argc, char *argv[], DumperOp
                 return status;
             }
         }
+        optionIndex = 0;
+        c = getopt_long(argc, argv, optStr, g_longOptions, &optionIndex);
     }
     DumpStatus status = CheckProcessAlive(opts);
     if (status != DumpStatus::DUMP_OK) {
