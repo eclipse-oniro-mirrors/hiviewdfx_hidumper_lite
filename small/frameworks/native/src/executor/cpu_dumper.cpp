@@ -39,7 +39,6 @@ const std::string PROC_STAT_PATH = "/proc/stat";
 const std::string PROC_LOADAVG_PATH = "/proc/loadavg";
 const std::string CPU_STR = "cpu";
 const int TOTAL_CPU_ID = -1;
-const int invalidPid = -1;
 constexpr int SECOND_TO_MILLISECONDS = 1000;
 constexpr int PROC_STAT_FIELD_STATE = 3;
 constexpr int PROC_STAT_FIELD_MINFLT = 10;
@@ -232,6 +231,9 @@ bool SampleCpuUsage(int pid, std::map<int, CpuJiffies> &cpuFirst, std::map<int, 
 bool PushUsageHeaderLines(std::vector<std::vector<std::string>> &datas, const std::string &startTime,
                           const std::string &endTime, const CpuJiffies &prev, const CpuJiffies &cur, uint64_t total)
 {
+    if (total == 0) {
+        return false;
+    }
     std::vector<std::string> loadLine;
     loadLine.push_back(ReadLoadAvg());
     datas.push_back(loadLine);
@@ -257,6 +259,9 @@ bool PushUsageHeaderLines(std::vector<std::vector<std::string>> &datas, const st
 void PushProcDetailLines(std::vector<std::vector<std::string>> &datas, const std::map<int, ProcStat> &procFirst,
                          const std::map<int, ProcStat> &procSecond, uint64_t total)
 {
+    if (total == 0) {
+        return;
+    }
     std::vector<ProcUsage> usages;
     for (const auto &item : procSecond) {
         auto it = procFirst.find(item.first);
