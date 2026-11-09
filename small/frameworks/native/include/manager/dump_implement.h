@@ -1,0 +1,163 @@
+/*
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef DUMP_IMPLEMENT_H
+#define DUMP_IMPLEMENT_H
+#include <map>
+#include <memory>
+#include <getopt.h>
+#include <mutex>
+#include "if_system_ability_manager.h"
+#include "common.h"
+#include "singleton.h"
+#include "raw_param.h"
+#include "common/dumper_parameter.h"
+#include "common/dump_cfg.h"
+#include "common/dumper_constant.h"
+#include "executor/hidumper_executor.h"
+#include "factory/executor_factory.h"
+
+namespace OHOS {
+namespace HiviewDFX {
+class DumpImplement : public Singleton<DumpImplement> {
+public:
+    DumpImplement();
+    ~DumpImplement();
+    DumpImplement(DumpImplement const &) = delete;
+    void operator=(DumpImplement const &) = delete;
+    DumpStatus Main(int argc, char *argv[], const std::shared_ptr<RawParam>& reqCtl);
+
+private:
+    DumpStatus InitHandle(int argc, char *argv[], const std::shared_ptr<RawParam> &reqCtl,
+        std::shared_ptr<DumperParameter>& ptrDumperParameter);
+    DumpStatus CmdParse(int argc, char* argv[], std::shared_ptr<DumperParameter>& dumpParameter);
+    /**
+     * Check client is hidumper.
+     *
+     * @param pid, process id of client.
+     * @return bool, hidumper client return true, not return false.
+     */
+    bool IsHidumperClientProcess(int pid);
+    DumpStatus CmdParseWithParameter(int argc, char* argv[], DumperOpts& opts);
+    DumpStatus CmdParseWithParameter(std::shared_ptr<DumperParameter>& dumpParameter,
+        int argc, char* argv[], DumperOpts& opts);
+    DumpStatus SetCmdParameter(int argc, char* argv[], DumperOpts& opts);
+    DumpStatus HandleOptionParameter(const std::string &optionName,
+        const std::string &optionValue, DumperOpts &opts, char *argv[]);
+    DumpStatus SetCmdIntegerParameter(const std::string& str, int& value);
+    DumpStatus SetShowCount(const std::string &str, int &value);
+    void PrintCommonUsage(std::string& str);
+    void CmdHelp();
+    void setExecutorList(std::vector<std::shared_ptr<HidumperExecutor>>& executors,
+        const std::vector<std::shared_ptr<DumpCfg>>& configs, bool isZip);
+    DumpStatus DumpDatas(const std::vector<std::shared_ptr<HidumperExecutor>>& executors,
+        const std::shared_ptr<DumperParameter>& dumpParameter,
+        HidumperExecutor::StringMatrix dumpDatas);
+    void AddGroupTitle(const std::string& groupName, HidumperExecutor::StringMatrix dumpDatas,
+        const std::shared_ptr<DumperParameter>& dumpParameter);
+    void AddExecutorFactoryToMap();
+    /**
+     * Check group name changed.
+     *
+     * @param lastName, last group name.
+     * @param curName, current group name.
+     * @return bool, changed true, not changed false.
+     */
+    bool CheckGroupName(std::string& lastName, const std::string& curName);
+    bool IsShortOptionReqArg(const char* optStr);
+    void SendErrorMessage(const std::string& errorStr);
+    void SendErrorMessageIf(DumperOpts &opts, const std::string &optionValue);
+    void SendPidErrorMessage(int pid);
+    void SendReleaseAppErrorMessage(const std::string& opt);
+    void SendNotAppErrorMessage(const std::string& opt);
+    void SendReleaseVersionErrorMessage(const std::string& opt);
+    void SendPermissionCheckErrorMessage(const std::string& opt, bool isProfileable,
+        bool isInhouse, bool isDeveloperMode);
+    bool ParseSubLongCmdOption(int argc, DumperOpts &opts, const struct option longOptions[],
+        const int &optionIndex, char *argv[]);
+    bool ParseEventCmdOption(DumperOpts &opts, const std::string& param);
+    DumpStatus ParseLongCmdOption(int argc, DumperOpts& opts, const struct option longOptions[],
+        const int& optionIndex, char* argv[]);
+    DumpStatus ParseShortCmdOption(int c, DumperOpts& opts, int argc, char* argv[]);
+    void CheckIncorrectCmdOption(const char* optStr, char* argv[]);
+    std::string RemoveCharacterFromStr(const std::string& str, const char character);
+    bool IsSADumperOption(char* argv[]);
+    DumpStatus CheckProcessAlive(const DumperOpts& opts);
+    void RemoveDuplicateString(DumperOpts& opts);
+#ifdef HIDUMPER_HIVIEWDFX_HISYSEVENT_ENABLE
+    void ReportJsheap(const DumperOpts &opts);
+    void ReportCjheap(const DumperOpts &opts);
+    void ReportMemheap(const DumperOpts &opts);
+#endif
+    bool CheckAppDebugVersion(int pid);
+    bool CheckJsHeapPermission(int pid);
+    bool CheckDumpPermission(DumperOpts &opt);
+    bool CheckUnableToDumpAll(int argc, DumperOpts& opt);
+    DumpStatus ValidateDumpOptions(int argc, DumperOpts& opts);
+    bool CheckDumpHeapMemParameter(int argc, DumperOpts& opt);
+    bool CheckShowLeakthreadParameter(DumperOpts& opt);
+    bool IsApplicationPid(int pid);
+    bool CheckArkwebJsParameter(DumperOpts& opt);
+    bool CheckKmpParameter(DumperOpts& opt);
+    bool ValidateRenderProcessAndFindMainPid(int renderPid, DumperOpts& opt);
+    bool SetIpcStatParam(DumperOpts &opt, const std::string& param);
+    DumpStatus ParseCmdOptionForA(DumperOpts &opt, char *argv[]);
+    void ProcessDumpOptions(int clientPid, std::shared_ptr<DumperParameter> &dumpParameter, DumperOpts &opts);
+    DumpStatus SetMemSmapsParam(DumperOpts &opt, int argc, char *argv[]);
+    DumpStatus SetMemJsheapParam(DumperOpts &opt);
+    DumpStatus SetMemCjheapParam(DumperOpts &opt);
+    DumpStatus SetMemHeapParam(DumperOpts &opt);
+    DumpStatus SetNativeParam(DumperOpts &opt);
+    DumpStatus SetKotlinParam(DumperOpts &opt);
+    DumpStatus SetJsvmParam(DumperOpts &opt);
+    DumpStatus SetArkwebJsParam(DumperOpts &opt);
+    DumpStatus SetRawParam(DumperOpts &opt);
+    DumpStatus SetMemPruneParam(DumperOpts &opt);
+    DumpStatus SetShowLeakthreadParam(DumperOpts &opt);
+    DumpStatus SetGCParam(DumperOpts &opt);
+    DumpStatus SetLeakobjParam(DumperOpts &opt);
+    DumpStatus SetCleanParam(DumperOpts &opt);
+    DumpStatus SetHeapCombineParam(DumperOpts &opt);
+    DumpStatus SetEventParam(DumperOpts &opts, const std::string& param);
+    void SetZipTitle(const std::shared_ptr<HidumperExecutor>& executor,
+        const std::shared_ptr<DumperParameter>& dumpParameter);
+    DumpStatus CheckArgs(int argc, char* argv[]);
+    bool IsNewStructSupport(std::shared_ptr<DumperParameter> ptrDumperParameter);
+    bool CheckJsHeapSingleParam(const DumperOpts &opt);
+    bool CheckMemDetailParamSupported(const DumperOpts &opt);
+
+private:
+    using ExecutorFactoryMap = std::map<int, std::shared_ptr<ExecutorFactory>>;
+    static const int ARG_INDEX_OFFSET_LAST_OPTION = 2;
+    const std::string unrecognizedError_ = "hidumper: option pid missed. ";
+    const std::string invalidError_ = "hidumper: invalid arg: ";
+    const std::string requireError_ = "hidumper: option requires an argument: ";
+    const std::string pidError_ = "hidumper: No such process: %d\n";
+    std::shared_ptr<ExecutorFactoryMap> ptrExecutorFactoryMap_;
+    mutable std::mutex mutexCmdLock_;
+    std::shared_ptr<RawParam> ptrReqCtl_;
+    std::string GetTime();
+    std::string path_;
+    static const int IPC_STAT_ARG_NUMS = 4;
+    static const int HIVIEW_UID = 1201;
+    // uid of application process is greater than APP_UID_LIMIT
+    static const int APP_UID_LIMIT = 20000;
+    static const int ARG_COUNT_NO_PARAM = 1;
+    static const int ARG_COUNT_WITH_ZIP = 2;
+    static const int ARG_COUNT_HEAP_MEM = 4;
+    static thread_local std::unique_ptr<DumperSysEventParams> dumperSysEventParams_;
+};
+} // namespace HiviewDFX
+} // namespace OHOS
+#endif // DUMP_IMPLEMENT_H

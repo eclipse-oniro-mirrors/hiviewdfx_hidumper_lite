@@ -1,0 +1,778 @@
+/*
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include <gtest/gtest.h>
+#include <map>
+#include <unistd.h>
+#include <vector>
+#include <future>
+#include <v1_0/imemory_tracker_interface.h>
+
+#define private public
+#include "executor/memory_dumper.h"
+#undef private
+#include "dump_client_main.h"
+#include "dump_utils.h"
+#include "common/dumper_opts.h"
+#include "hdf_base.h"
+#include "executor/memory/memory_filter.h"
+#include "executor/memory/memory_util.h"
+#include "executor/memory/dump_arkts_heap_info.h"
+#include "hidumper_test_utils.h"
+#include "util/string_utils.h"
+
+using namespace testing::ext;
+using namespace OHOS::HDI::Memorytracker::V1_0;
+namespace OHOS {
+namespace HiviewDFX {
+class MemoryDumperTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
+};
+
+void MemoryDumperTest::SetUpTestCase(void)
+{
+}
+void MemoryDumperTest::TearDownTestCase(void)
+{
+}
+void MemoryDumperTest::SetUp(void)
+{
+}
+void MemoryDumperTest::TearDown(void)
+{
+}
+
+/**
+ * @tc.name: MemoryDumperTest001
+ * @tc.desc: Test MemoryDumper has correct group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest001, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "Anonymous Page";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest002
+ * @tc.desc: Test MemoryDumper has DMA group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NX04
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest002, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "DMA";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest003
+ * @tc.desc: Test MemoryDumper has correct group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest003, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem 1";
+    std::string str = "Total";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "native heap:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Purgeable:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "        PurgSum:0 kB";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "        PurgPin:0 kB";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "DMA:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest004
+ * @tc.desc: Test MemoryDumper has GPU group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest004, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "GPU";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest005
+ * @tc.desc: Test MemoryDumper has Purgeable group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest005, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "Total Purgeable";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total PurgSum";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total PurgPin";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest006
+ * @tc.desc: Test MemoryDumper has Dma/PurgSum/PurgPin group.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest006, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "Dma      PurgSum      PurgPin";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest007
+ * @tc.desc: Test zip memory not contain "Total Memory Usage by PID".
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest007, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem --zip";
+    std::string str = "Total Memory Usage by PID";
+    ASSERT_FALSE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest008
+ * @tc.desc: Test dma is equal graph.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest008, TestSize.Level3)
+{
+    auto rsPid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("render_service"));
+    int pid = rsPid > 0 ? rsPid : 1;
+    ASSERT_GT(pid, 0);
+    std::string cmd = "hidumper --mem " + std::to_string(pid);
+    std::string str = "Graph";
+    std::string result = "";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, str, result));
+    std::string graphPss = HidumperTestUtils::GetInstance().GetValueInLine(result, 1);
+    ASSERT_TRUE(IsNumericStr(graphPss));
+    str = "Dma";
+    result = "";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, str, result));
+    vector<string> values;
+    StringUtils::GetInstance().StringSplit(result, ":", values); // Dma:0 kB
+    std::string dmaStr = "";
+    if (!values.empty() && values.size() >= 2) { // 2: Dma, 0 kB
+        dmaStr = values[1];
+        if (dmaStr.size() >= 3) {
+            dmaStr = dmaStr.substr(0, dmaStr.size() - 4);  // 4: ' kB' + 1(index from to 0,1,2...)
+            ASSERT_TRUE(IsNumericStr(dmaStr));
+        }
+    }
+    ASSERT_TRUE(graphPss == dmaStr);
+}
+
+/**
+ * @tc.name: MemoryDumperTest009
+ * @tc.desc: Test GL not out of bounds.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest009, TestSize.Level3)
+{
+    auto rsPid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("render_service"));
+    int pid = rsPid > 0 ? rsPid : 1;
+    ASSERT_GT(pid, 0);
+    std::string cmd = "hidumper --mem " + std::to_string(pid);
+    std::string str = "GL";
+    std::string result = "";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, str, result));
+    std::string glPss = HidumperTestUtils::GetInstance().GetValueInLine(result, 1);
+    ASSERT_TRUE(IsNumericStr(glPss));
+    uint64_t gl = static_cast<uint64_t>(std::stoi(glPss));
+    ASSERT_FALSE(gl < 0 || gl > UINT64_MAX);
+}
+
+/**
+ * @tc.name: MemoryDumperTest010
+ * @tc.desc: Test HeapSize for "hidumper --mem `pidof com.ohos.sceneboard`"".
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest010, TestSize.Level3)
+{
+    auto sceneboardPid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("com.ohos.sceneboard"));
+    int pid = sceneboardPid > 0 ? sceneboardPid : 1;
+    ASSERT_GT(pid, 0);
+    std::string cmd = "hidumper --mem " + std::to_string(pid);
+    std::string str = "native heap";
+    std::string result = "";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, str, result));
+    // 9: HeapSize index
+    std::string nativeHeapSizeStr = HidumperTestUtils::GetInstance().GetValueInLine(result, 9);
+    ASSERT_TRUE(IsNumericStr(nativeHeapSizeStr));
+    if (DumpUtils::IsHmKernel()) {
+        uint64_t nativeHeapSize = static_cast<uint64_t>(std::stoi(nativeHeapSizeStr));
+        ASSERT_TRUE(nativeHeapSize > 0);
+    }
+}
+
+/**
+ * @tc.name: MemoryDumperTest011
+ * @tc.desc: Test MemoryDumper has correct print.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest011, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem";
+    std::string str = "-------------------------------[memory]-------------------------------";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total Memory Usage by PID:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    std::string titleTmp = "PID        Total Pss(xxx in SwapPss)    Total Vss    Total Rss    Total Uss";
+    str = titleTmp + "           GL        Graph          Dma      PurgSum      PurgPin     Name";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total Memory Usage by Size:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total Pss by OOM adjustment:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest012
+ * @tc.desc: Test --mem-smaps has correct print.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest012, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem-smaps 1";
+    std::string str = "-------------------------------[memory]-------------------------------";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    std::string titleTmp = "Size        Rss         Pss         Clean       Dirty       Clean       Dirty";
+    str = titleTmp + "       Swap        SwapPss     Counts      Category                         Name";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = ".so                              /system";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "                                 Summary";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest013
+ * @tc.desc: Test --mem-smaps -v has correct print.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest013, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem-smaps 1 -v";
+    std::string str = "-------------------------------[memory]-------------------------------";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    std::string titleTmp = "Size        Rss         Pss         Clean       Dirty       Clean       Dirty       Swap";
+    str = titleTmp + "        SwapPss     Perm        Start             End         Category                   Name";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "dev                        /dev";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "                                 Summary";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest014
+ * @tc.desc: Test hidumper --mem --prune has correct print.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest014, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem --prune";
+    std::string str = "-------------------------------[memory]-------------------------------";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "Total Memory Usage by PID:";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+    str = "PID        Total Pss(xxx in SwapPss)           GL     AdjLabel     Name";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest015
+ * @tc.desc: Test --show-arktsheap outputs arkts heap data row.
+ *           Use sceneboard when HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE is enabled,
+ *           use systemui when disabled.
+ * @tc.type: FUNC
+ * @tc.require: issueI5NWZQ
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest015, TestSize.Level3)
+{
+#ifdef HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE
+    auto pid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("com.ohos.sceneboard"));
+#else
+    auto pid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("com.ohos.systemui"));
+#endif
+    int targetPid = pid > 0 ? pid : 1;
+    ASSERT_GT(targetPid, 0);
+    std::string cmd = "hidumper --mem " + std::to_string(targetPid) + " --show-arktsheap";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, "arkts heap:"));
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, "arkts_heap(KB)"));
+    std::string result;
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, std::to_string(targetPid), result));
+    std::string heapSizeStr = HidumperTestUtils::GetInstance().GetValueInLine(result, 2);
+    ASSERT_TRUE(IsNumericStr(heapSizeStr));
+}
+
+/**
+ * @tc.name: MemoryDumperTest016
+ * @tc.desc: Verify AppendArktsHeapData outputs nothing when result has no delimiter '|'.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest016, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 100;
+    dumper.AppendArktsHeapData("no_delimiter_here");
+    EXPECT_EQ(dumpDatas->size(), 0u);
+}
+
+/**
+ * @tc.name: MemoryDumperTest017
+ * @tc.desc: Verify AppendArktsHeapData outputs nothing when thread name is empty after '|'.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest017, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 300;
+    dumper.AppendArktsHeapData("1048576|");
+    EXPECT_EQ(dumpDatas->size(), 0u);
+}
+
+/**
+ * @tc.name: MemoryDumperTest018
+ * @tc.desc: Verify AppendArktsHeapData outputs nothing when strtoull fails on non-numeric prefix.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest018, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 200;
+    dumper.AppendArktsHeapData("abc|thread");
+    EXPECT_EQ(dumpDatas->size(), 0u);
+}
+
+/**
+ * @tc.name: MemoryDumperTest019
+ * @tc.desc: Verify AppendArktsHeapData outputs nothing when heapSize is zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest019, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 400;
+    dumper.AppendArktsHeapData("0|thread");
+    EXPECT_EQ(dumpDatas->size(), 0u);
+}
+
+/**
+ * @tc.name: MemoryDumperTest020
+ * @tc.desc: Verify MergeArktsHeapResult outputs only headers when future is invalid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest020, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.MergeArktsHeapResult();
+    EXPECT_EQ(dumpDatas->size(), 3u);
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "arkts heap:");
+}
+
+/**
+ * @tc.name: MemoryDumperTest021
+ * @tc.desc: Test showArktsHeap_ flag is set correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest021, TestSize.Level1)
+{
+    DumperOpts opts;
+    EXPECT_FALSE(opts.showArktsHeap_);
+    opts.showArktsHeap_ = true;
+    EXPECT_TRUE(opts.showArktsHeap_);
+}
+
+/**
+ * @tc.name: MemoryDumperTest022
+ * @tc.desc: Test showArktsHeap_ defaults false and survives reset/assign.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest022, TestSize.Level1)
+{
+    DumperOpts opts;
+    EXPECT_FALSE(opts.showArktsHeap_);
+    opts.ResetMemOptions();
+    EXPECT_FALSE(opts.showArktsHeap_);
+    DumperOpts other;
+    other.showArktsHeap_ = true;
+    opts.AssignMemOptions(other);
+    EXPECT_TRUE(opts.showArktsHeap_);
+}
+
+/**
+ * @tc.name: MemoryDumperTest023
+ * @tc.desc: Test MergeArktsHeapResult outputs header + data row on success.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest023, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 1234;
+
+    std::promise<std::string> prom;
+    prom.set_value("1048576|test_thread");
+    dumper.arktsHeapFuture_ = prom.get_future();
+
+    dumper.MergeArktsHeapResult();
+
+    EXPECT_EQ(dumpDatas->size(), 4u);
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "arkts heap:");
+    EXPECT_TRUE((*dumpDatas)[2][0].find("tid") != std::string::npos);
+    EXPECT_TRUE((*dumpDatas)[3][0].find("1234") != std::string::npos);
+    EXPECT_TRUE((*dumpDatas)[3][0].find("test_thread") != std::string::npos);
+}
+
+/**
+ * @tc.name: MemoryDumperTest024
+ * @tc.desc: Test MergeArktsHeapResult outputs only header on failure.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest024, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.pid_ = 5678;
+
+    std::promise<std::string> prom;
+    prom.set_value("");
+    dumper.arktsHeapFuture_ = prom.get_future();
+
+    dumper.MergeArktsHeapResult();
+
+    EXPECT_EQ(dumpDatas->size(), 3u);
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "arkts heap:");
+}
+
+/**
+ * @tc.name: MemoryDumperTest025
+ * @tc.desc: Verify GetArktsHeapSize returns false on IPC failure with pid=1.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest025, TestSize.Level1)
+{
+    DumpArktsHeapInfo info;
+    std::string result;
+    bool ret = info.GetArktsHeapSize(1, result);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: MemoryDumperTest026
+ * @tc.desc: Verify GetArktsHeapSize returns false with non-existent pid=99999.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest026, TestSize.Level1)
+{
+    DumpArktsHeapInfo info;
+    std::string result;
+    bool ret = info.GetArktsHeapSize(99999, result);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: MemoryDumperTest027
+ * @tc.desc: Test showLeakThread_ flag is set correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest027, TestSize.Level1)
+{
+    DumperOpts opts;
+    EXPECT_FALSE(opts.showLeakThread_);
+    opts.showLeakThread_ = true;
+    EXPECT_TRUE(opts.showLeakThread_);
+}
+
+/**
+ * @tc.name: MemoryDumperTest028
+ * @tc.desc: Test showLeakThread_ defaults false and survives reset/assign.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest028, TestSize.Level1)
+{
+    DumperOpts opts;
+    EXPECT_FALSE(opts.showLeakThread_);
+    opts.ResetMemOptions();
+    EXPECT_FALSE(opts.showLeakThread_);
+    DumperOpts other;
+    other.showLeakThread_ = true;
+    opts.AssignMemOptions(other);
+    EXPECT_TRUE(opts.showLeakThread_);
+}
+
+/**
+ * @tc.name: MemoryDumperTest029
+ * @tc.desc: Functional test: "hidumper --mem <non-app pid> --show-leakthread" prints
+ *           the only-supported-for-application error.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest029, TestSize.Level3)
+{
+    std::string cmd = "hidumper --mem 1 --show-leakthread";
+    std::string str = "[ERROR]: The --show-leakthread option is only supported for application.";
+    ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, str));
+}
+
+/**
+ * @tc.name: MemoryDumperTest030
+ * @tc.desc: Functional test: "hidumper --mem <app pid> --show-leakthread" prints leakthread
+ *           result on eng/debug device (debug-signed check is only enforced in user mode),
+ *           otherwise prints the permission error message.
+ *           Use launcher (application uid) as target, fallback to init when not running.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest030, TestSize.Level3)
+{
+    auto pid = static_cast<int32_t>(HidumperTestUtils::GetInstance().GetPidByName("com.ohos.launcher"));
+    int targetPid = pid > 0 ? pid : 1;
+    ASSERT_GT(targetPid, 0);
+    std::string cmd = "hidumper --mem " + std::to_string(targetPid) + " --show-leakthread";
+    bool hasLeakThread = HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, "leakthread:");
+    if (hasLeakThread) {
+        // the data line returned by runtime contains both counts
+        std::string result;
+        ASSERT_TRUE(HidumperTestUtils::GetInstance().GetSpecialLine(cmd, "total thread count:", result));
+        ASSERT_TRUE(result.find("leak thread stack count:") != std::string::npos);
+    } else {
+        // target is not an application or not a debug-signed application (user mode device)
+        ASSERT_TRUE(HidumperTestUtils::GetInstance().IsExistInCmdResult(cmd, "[ERROR]:"));
+    }
+}
+
+/**
+ * @tc.name: MemoryDumperTest031
+ * @tc.desc: Test MergeLeakThreadResult outputs blank line + title + data row on success.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest031, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+
+    std::promise<std::string> prom;
+    prom.set_value("total thread count: 28, leak thread stack count: 20\n");
+    dumper.leakThreadFuture_ = prom.get_future();
+
+    dumper.MergeLeakThreadResult();
+
+    EXPECT_EQ(dumpDatas->size(), 3u);
+    EXPECT_STREQ((*dumpDatas)[0][0].c_str(), "");
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "leakthread:");
+    EXPECT_STREQ((*dumpDatas)[2][0].c_str(), "total thread count: 28, leak thread stack count: 20\n");
+}
+
+/**
+ * @tc.name: MemoryDumperTest032
+ * @tc.desc: Test MergeLeakThreadResult outputs title only (no data row) when future yields
+ *           empty result, same presentation as the arkts heap section on failure.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest032, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+
+    std::promise<std::string> prom;
+    prom.set_value("");
+    dumper.leakThreadFuture_ = prom.get_future();
+
+    dumper.MergeLeakThreadResult();
+
+    EXPECT_EQ(dumpDatas->size(), 2u);
+    EXPECT_STREQ((*dumpDatas)[0][0].c_str(), "");
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "leakthread:");
+}
+
+/**
+ * @tc.name: MemoryDumperTest033
+ * @tc.desc: Test StartLeakThreadFetch + MergeLeakThreadResult with non-existent pid=99999
+ *           outputs title only (AppMgr rejects the unknown pid, no data row is appended).
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryDumperTest033, TestSize.Level1)
+{
+    MemoryDumper dumper;
+    auto dumpDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    dumper.dumpDatas_ = dumpDatas;
+    dumper.StartLeakThreadFetch(99999);
+    dumper.MergeLeakThreadResult();
+    EXPECT_EQ(dumpDatas->size(), 2u);
+    EXPECT_STREQ((*dumpDatas)[1][0].c_str(), "leakthread:");
+}
+
+/**
+ * @tc.name: MemoryUtilTest001
+ * @tc.desc: Test IsNameLine has correct ret.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest001, TestSize.Level1)
+{
+    const std::string valueLine = "Rss:                  24 kB";
+    std::string name;
+    uint64_t iNode = 0;
+    ASSERT_FALSE(MemoryUtil::GetInstance().IsNameLine(valueLine, name, iNode));
+    ASSERT_EQ(name, "");
+    const std::string nameLine = "ffb84000-ffba5000 rw-p 00000000 00:00 0                                  [stack]";
+    ASSERT_TRUE(MemoryUtil::GetInstance().IsNameLine(nameLine, name, iNode));
+    ASSERT_EQ(name, "[stack]");
+}
+
+/**
+ * @tc.name: MemoryUtilTest002
+ * @tc.desc: Test GetTypeAndValue has correct ret.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest002, TestSize.Level1)
+{
+    std::string type;
+    uint64_t value = 0;
+    const std::string illegalStr = "aaaaaa";
+    ASSERT_FALSE(MemoryUtil::GetInstance().GetTypeAndValue(illegalStr, type, value));
+    const std::string valueStr = "MemTotal:        2010244 kB";
+    ASSERT_TRUE(MemoryUtil::GetInstance().GetTypeAndValue(valueStr, type, value));
+    ASSERT_EQ(type, "MemTotal");
+    ASSERT_EQ(value, 2010244);
+}
+
+/**
+ * @tc.name: MemoryUtilTest003
+ * @tc.desc: Test RunCMD has correct ret.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest003, TestSize.Level1)
+{
+    const std::string cmd = "ps -ef";
+    std::vector<std::string> vec;
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    ASSERT_GT(vec.size(), 0);
+}
+
+/**
+ * @tc.name: MemoryUtilTest004
+ * @tc.desc: Test hidumper some cmd.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest004, TestSize.Level1)
+{
+    std::string cmd = "hidumper --mem-smaps 1";
+    std::vector<std::string> vec;
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-smaps 1 -v";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --net 1";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --storage 1";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+}
+
+/**
+ * @tc.name: MemoryUtilTest005
+ * @tc.desc: Test no such pid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest005, TestSize.Level1)
+{
+    std::string cmd = "hidumper --mem-smaps 100000";
+    std::vector<std::string> vec;
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-smaps 100000 -v";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --cpuusage 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper -p 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --storage 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --net 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-jsheap 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-jsheap 0";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-cjheap 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-cjheap 0";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-heap 100000 --native";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --mem-heap 0 --native";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    cmd = "hidumper --ipc --stat 100000";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+}
+
+/**
+ * @tc.name: MemoryUtilTest006
+ * @tc.desc: Test hidumper process exit success.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MemoryDumperTest, MemoryUtilTest006, TestSize.Level1)
+{
+    std::vector<std::string> vec;
+    std::string cmd = "hidumper -h";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    ASSERT_GT(vec.size(), 0);
+    vec.clear();
+    cmd = "pidof hidumper";
+    ASSERT_TRUE(MemoryUtil::GetInstance().RunCMD(cmd, vec));
+    ASSERT_EQ(vec.size(), 0);
+}
+} // namespace HiviewDFX
+} // namespace OHOS

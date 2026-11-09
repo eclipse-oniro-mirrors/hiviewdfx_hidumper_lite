@@ -1,0 +1,312 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("../../hidumper.gni")
+
+config("hidumper_include") {
+  include_dirs = [
+    ".",
+    "${hidumper_frameworks_path}/data_inventory",
+    "${hidumper_frameworks_path}/dump_strategy",
+    "${hidumper_frameworks_path}/include",
+    "${hidumper_frameworks_path}/manager",
+    "${hidumper_frameworks_path}/task",
+    "${hidumper_frameworks_path}/utils",
+  ]
+}
+
+ohos_source_set("dump_main") {
+  branch_protector_ret = "pac_ret"
+  sources = [
+    "dump_utils.cpp",
+    "src/common/dump_cfg.cpp",
+    "src/common/dumper_opts.cpp",
+    "src/common/dumper_parameter.cpp",
+    "src/common/option_args.cpp",
+    "src/executor/api_dumper.cpp",
+    "src/executor/cjheap_memory_dumper.cpp",
+    "src/executor/cmd_dumper.cpp",
+    "src/executor/column_rows_filter.cpp",
+    "src/executor/cpu_dumper.cpp",
+    "src/executor/dumper_group.cpp",
+    "src/executor/env_param_dumper.cpp",
+    "src/executor/event/dump_event_info.cpp",
+    "src/executor/event/event_query_callback.cpp",
+    "src/executor/event_detail_dumper.cpp",
+    "src/executor/event_list_dumper.cpp",
+    "src/executor/fd_thread_dumper.cpp",
+    "src/executor/fd_output.cpp",
+    "src/executor/file_format_dump_filter.cpp",
+    "src/executor/file_stream_dumper.cpp",
+    "src/executor/hidumper_executor.cpp",
+    "src/executor/ipc_stat_dumper.cpp",
+    "src/executor/jsheap_memory_dumper.cpp",
+    "src/executor/heap_memory_dumper.cpp",
+    "src/executor/list_dumper.cpp",
+    "src/executor/memory/dump_cjheap_info.cpp",
+    "src/executor/memory/dump_jsheap_info.cpp",
+    "src/executor/memory/dump_heap_info.cpp",
+    "src/executor/memory/dump_arkts_heap_info.cpp",
+    "src/executor/memory_dumper.cpp",
+    "src/executor/properties_dumper.cpp",
+    "src/executor/sa_dumper.cpp",
+    "src/executor/traffic_dumper.cpp",
+    "src/executor/version_dumper.cpp",
+    "src/executor/zip_output.cpp",
+    "src/executor/zipfolder_output.cpp",
+    "src/factory/api_dumper_factory.cpp",
+    "src/factory/cjheap_memory_dumper_factory.cpp",
+    "src/factory/cmd_dumper_factory.cpp",
+    "src/factory/column_rows_filter_factory.cpp",
+    "src/factory/cpu_dumper_factory.cpp",
+    "src/factory/dumper_group_factory.cpp",
+    "src/factory/env_param_dumper_factory.cpp",
+    "src/factory/event_detail_dumper_factory.cpp",
+    "src/factory/event_list_dumper_factory.cpp",
+    "src/factory/fd_thread_dumper_factory.cpp",
+    "src/factory/fd_output_factory.cpp",
+    "src/factory/file_dumper_factory.cpp",
+    "src/factory/file_format_dump_filter_factory.cpp",
+    "src/factory/ipc_stat_dumper_factory.cpp",
+    "src/factory/jsheap_memory_dumper_factory.cpp",
+    "src/factory/heap_memory_dumper_factory.cpp",
+    "src/factory/list_dumper_factory.cpp",
+    "src/factory/memory_dumper_factory.cpp",
+    "src/factory/properties_dumper_factory.cpp",
+    "src/factory/sa_dumper_factory.cpp",
+    "src/factory/traffic_dumper_factory.cpp",
+    "src/factory/version_dumper_factory.cpp",
+    "src/factory/zip_output_factory.cpp",
+    "src/manager/dump_implement.cpp",
+    "src/util/config_data.cpp",
+    "src/util/config_utils.cpp",
+    "src/util/dump_compressor.cpp",
+    "src/util/file_utils.cpp",
+    "src/util/string_utils.cpp",
+    "src/util/zip/zip_writer.cpp",
+    "src/util/zip_file_cleaner.cpp",
+    "src/util/zip_utils.cpp",
+  ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    "${hidumper_service_path}:hidumpercpuservice_gen_config",
+    "${hidumper_service_path}:interface_include",
+    "${hidumper_service_path}:zidl_config",
+    "${hidumper_service_path}:service_config",
+    ":hidumper_include",
+  ]
+
+  deps = [
+    "${hidumper_service_path}:hidumpercpuservice_interface",
+    "${hidumper_utils_path}:utils",
+  ]
+
+  external_deps = [
+    "ability_base:configuration",
+    "ability_base:want",
+    "bounds_checking_function:libsec_shared",
+    "cJSON:cjson",
+    "c_utils:utils",
+    "hdf_core:libhdi",
+    "hicollie:libhicollie",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hisysevent:libhisyseventmanager",
+    "hiview:libucollection_utility",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "zlib:shared_libz",
+    "memory_utils:libmeminfo",
+  ]
+  defines = []
+
+  if (hidumper_ability_runtime_enable) {
+    external_deps += [ "ability_runtime:app_manager" ]
+    defines += [ "HIDUMPER_ABILITY_RUNTIME_ENABLE" ]
+  }
+
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+
+  if (hidumper_netmanager_base_enable) {
+    external_deps += [ "netmanager_base:net_stats_manager_if" ]
+    defines += [ "HIDUMPER_NETMANAGER_BASE_ENABLE" ]
+  }
+
+  if (hidumper_bundlemanager_framework_enable) {
+    external_deps += [
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
+    ]
+    defines += [ "HIDUMPER_BUNDLEMANAGER_FRAMEWORK_ENABLE" ]
+  }
+
+  if (hidumper_hiviewdfx_hisysevent_enable) {
+    external_deps += [ "hisysevent:libhisysevent" ]
+    defines += [ "HIDUMPER_HIVIEWDFX_HISYSEVENT_ENABLE" ]
+  }
+
+  if (hidumper_hiviewdfx_hiview_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+
+  if (is_emulator) {
+    defines += [ "IS_EMULATOR" ]
+  }
+
+  subsystem_name = "hiviewdfx"
+
+  part_name = "hidumper"
+}
+
+ohos_source_set("dump_framework") {
+  branch_protector_ret = "pac_ret"
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    "${hidumper_service_path}:hidumpercpuservice_gen_config",
+    "${hidumper_service_path}:interface_include",
+    "${hidumper_service_path}:zidl_config",
+    "${hidumper_service_path}:service_config",
+    ":hidumper_include",
+  ]
+
+  sources = [
+    "data_inventory/data_inventory.cpp",
+    "dump_strategy/dump_strategy_factory.cpp",
+    "manager/cmd_parse.cpp",
+    "manager/dump_manager.cpp",
+    "task/base/task_control.cpp",
+    "task/base/task_enable_config.cpp",
+    "task/base/task_register.cpp",
+    "task/cpu/cpu_freq_info_task.cpp",
+    "task/memory/slab_info_task.cpp",
+    "task/storage/disk_info_task.cpp",
+    "task/storage/iotop_info_task.cpp",
+    "task/storage/lsof_info_task.cpp",
+    "task/storage/mounts_info_task.cpp",
+    "task/storage/storage_io_info_task.cpp",
+    "task/system_info/device_info_task.cpp",
+    "task/system_info/kernel_module_info_task.cpp",
+    "task/system_info/system_cluster_info_task.cpp",
+    "task/system_info/wakeup_sources_info_task.cpp",
+    "task/writer/cpu_freq_info_writer.cpp",
+    "task/writer/kernel_mem_info_writer.cpp",
+    "task/writer/kernel_module_info_writer.cpp",
+    "task/writer/system_base_info_writer.cpp",
+    "task/writer/storage_info_writer.cpp",
+    "task/writer/storage_io_info_writer.cpp",
+    "utils/writer_utils.cpp",
+  ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "cJSON:cjson",
+    "c_utils:utils",
+    "ffrt:libffrt",
+    "hilog:libhilog",
+    "hiview:libucollection_utility",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+  ]
+
+  subsystem_name = "hiviewdfx"
+  part_name = "hidumper"
+}
+
+ohos_source_set("hidumperclient_source") {
+  branch_protector_ret = "pac_ret"
+  sources = [
+    "${hidumper_client_path}/native/dump_client_main.cpp",
+    "dump_utils.cpp",
+  ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    "${hidumper_service_path}:interface_include",
+    "${hidumper_service_path}:zidl_config",
+    "${hidumper_service_path}:service_config",
+    ":hidumper_include",
+  ]
+
+  deps = [
+    "${hidumper_service_path}:hidumper_client",
+    "${hidumper_utils_path}:utils",
+  ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+  subsystem_name = "hiviewdfx"
+  part_name = "hidumper"
+}
+
+ohos_shared_library("hidumperclient") {
+  branch_protector_ret = "pac_ret"
+  install_enable = true
+  deps = [ ":hidumperclient_source" ]
+  external_deps = [ "hilog:libhilog" ]
+  version_script = "${hidumper_service_path}/hidumper.map"
+  subsystem_name = "hiviewdfx"
+  part_name = "hidumper"
+}
+
+ohos_executable("hidumper") {
+  branch_protector_ret = "pac_ret"
+  install_enable = true
+
+  sources = [ "${hidumper_client_path}/native/main.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    "${hidumper_service_path}:interface_include",
+    "${hidumper_service_path}:zidl_config",
+    "${hidumper_service_path}:service_config",
+    ":hidumper_include",
+  ]
+
+  deps = [
+    ":hidumperclient_source",
+    "${hidumper_service_path}:hidumper_client",
+    "${hidumper_utils_path}:utils",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  if (hidumper_feature_support_usr_symlink) {
+    symlink_target_name = [
+      "../usr/bin/hidumper",
+    ]
+  }
+
+  subsystem_name = "hiviewdfx"
+
+  part_name = "hidumper"
+}

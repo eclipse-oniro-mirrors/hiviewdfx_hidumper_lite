@@ -1,0 +1,664 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("../../../hidumper.gni")
+
+module_output_path = "hidumper/hidumper"
+
+source_path = "${hidumper_frameworks_path}"
+
+###############################################################################
+config("module_private_config") {
+  visibility = [ ":*" ]
+
+  include_dirs = [
+    ".",
+    "../../",
+    "${hidumper_interface}/innerkits/include/",
+    "${hidumper_interface}/native/innerkits/include/",
+    "../../../utils/native/include/",
+    "../../../services/zidl/include",
+    "../../../services/native/include",
+    "${source_path}/include",
+    "${source_path}/",
+    "${source_path}/manager",
+    "${source_path}/dumpers",
+    "include",
+    "${hidumper_frameworks_path}",
+    "${hidumper_frameworks_path}/include",
+    "${hidumper_frameworks_path}/include/common",
+    "${hidumper_frameworks_path}/include/executor",
+    "${hidumper_frameworks_path}/include/factory",
+    "${hidumper_service_path}:interface_include",
+    "${hidumper_service_path}/zidl/include",
+    "${hidumper_service_path}/native/include",
+    "${hidumper_plugins_path}",
+  ]
+
+  cflags_cc = [ "-DDUMP_TEST_MODE" ]
+}
+
+##############################unittest##########################################
+ohos_unittest("HidumperServiceTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${hidumper_frameworks_path}/src/executor/memory/memory_util.cpp",
+    "hidumper_service_test.cpp",
+  ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("HidumperDataInventoryTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "data_inventory_test.cpp",
+  ]
+
+  deps = [
+    "${hidumper_frameworks_path}:dump_framework"
+  ]
+
+  configs = [
+    "${hidumper_frameworks_path}:hidumper_include",
+    "${hidumper_utils_path}:utils_config",
+  ]
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "ffrt:libffrt",
+    "hilog:libhilog",
+    "hiview:libucollection_utility",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "memmgr:memmgrclient",
+    "samgr:samgr_proxy",
+    "cJSON:cjson",
+  ]
+}
+
+ohos_unittest("HidumperDumpersTest") {
+  module_out_path = module_output_path
+
+  sources = [ "hidumper_dumpers_test.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  defines = []
+  if (hidumper_hiviewdfx_hiview_enable) {
+    deps += [ "${hidumper_service_path}:hidumperservice_cpu_source_test" ]
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+
+  external_deps = [
+    "ability_base:configuration",
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+  ]
+
+  defines = []
+  if (hidumper_ability_runtime_enable) {
+    external_deps += [ "ability_runtime:app_manager" ]
+    defines += [ "HIDUMPER_ABILITY_RUNTIME_ENABLE" ]
+  }
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+}
+
+ohos_unittest("StorageInfoTaskTest") {
+  module_out_path = module_output_path
+
+  sources = [ "storage_info_task_test.cpp" ]
+
+  deps = [ "${hidumper_frameworks_path}:dump_framework" ]
+
+  configs = [
+    "${hidumper_frameworks_path}:hidumper_include",
+    "${hidumper_utils_path}:utils_config",
+  ]
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("HidumperOutputTest") {
+  module_out_path = module_output_path
+
+  sources = [ "hidumper_output_test.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "zlib:shared_libz",
+  ]
+}
+
+ohos_unittest("HidumperConfigUtilsTest") {
+  module_out_path = module_output_path
+
+  sources = [ "hidumper_configutils_test.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "zlib:shared_libz",
+  ]
+}
+
+ohos_unittest("MemoryDumperTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${hidumper_frameworks_path}/src/executor/memory/memory_util.cpp",
+    "hidumper_test_utils.cpp",
+    "memory_dumper_test.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "drivers_interface_memorytracker:libmemorytracker_proxy_1.0",
+    "hdf_core:libhdf_utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+
+  defines = []
+  if (hidumper_ability_runtime_enable) {
+    external_deps += [ "ability_runtime:app_manager" ]
+    defines += [ "HIDUMPER_ABILITY_RUNTIME_ENABLE" ]
+  }
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+}
+
+ohos_unittest("HidumperMemoryTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "hidumper_memory_test.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = [
+    #"${hidumper_service_path}:hidumperservice_source",
+    "${hidumper_service_path}:hidumpermemory_source",
+    "${hidumper_plugins_path}:hidumper_plugin",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_memorytracker:libmemorytracker_proxy_1.0",
+    "hdf_core:libhdf_utils",
+    "hilog:libhilog",
+    "hiview:libucollection_utility",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "memory_utils:libmeminfo",
+    "samgr:samgr_proxy",
+  ]
+  defines = []
+  if (hidumper_report_memmgr) {
+    defines += [ "HIDUMPER_MEMMGR_ENABLE" ]
+  }
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("SADumperTest") {
+  module_out_path = module_output_path
+  sources = [
+    "hidumper_test_utils.cpp",
+    "sa_dumper_test.cpp",
+  ]
+  configs = [ ":module_private_config" ]
+  deps = []
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+
+  defines = []
+  if (hidumper_hiviewdfx_hiview_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+}
+
+ohos_unittest("HidumperPrivacyTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "hidumper_privacy_test.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = []
+
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("HidumperInnerkitsTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${hidumper_frameworks_path}/src/executor/memory/get_heap_info.cpp",
+    "${hidumper_frameworks_path}/src/executor/memory/memory_filter.cpp",
+    "${hidumper_frameworks_path}/src/executor/memory/memory_util.cpp",
+    "${hidumper_frameworks_path}/src/executor/memory/parse/parse_smaps_info.cpp",
+    "hidumper_innerkits_test.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  defines = []
+  if (hidumper_hiviewdfx_hiview_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+
+  configs = [ ":module_private_config" ]
+
+  deps = [
+    "${hidumper_service_path}:hidumperservice_source",
+    "../../../interfaces/innerkits:lib_dump_usage",
+  ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "drivers_interface_memorytracker:libmemorytracker_proxy_1.0",
+    "hdf_core:libhdf_utils",
+    "hilog:libhilog",
+    "hiview:libucollection_utility",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+    "memory_utils:libmeminfo",
+  ]
+}
+
+ohos_unittest("GetHeapInfoTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${hidumper_frameworks_path}/src/executor/memory/get_heap_info.cpp",
+    "get_heap_info_test.cpp",
+  ]
+  cflags = [ "-DHIDUMPER_UNITTEST" ]
+  configs = [ ":module_private_config" ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+  defines = []
+  external_deps = [
+    "ability_base:configuration",
+    "c_utils:utils",
+    "hilog:libhilog",
+    "hiview:libucollection_utility",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+    "memory_utils:libmeminfo",
+  ]
+  if (hidumper_ability_runtime_enable) {
+    external_deps += [ "ability_runtime:app_manager" ]
+    defines += [ "HIDUMPER_ABILITY_RUNTIME_ENABLE" ]
+  }
+}
+
+ohos_unittest("HidumperManagerTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "hidumper_manager_test.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+  ]
+
+  defines = []
+  if (hidumper_hiviewdfx_hiview_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+  if (is_emulator) {
+    defines += [ "IS_EMULATOR" ]
+  }
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("HidumperCpuServiceTest") {
+  module_out_path = module_output_path
+
+  sources = [ "hidumper_cpu_service_test.cpp" ]
+
+  configs = [
+    "${hidumper_service_path}:hidumpercpuservice_gen_config",
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [
+    "${hidumper_service_path}:hidumperservice_cpu_source_test",
+    "${hidumper_service_path}:hidumperservice_source",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+  ]
+  defines = []
+  if (hidumper_ablility_base_enable) {
+    external_deps += [ "ability_base:want" ]
+    external_deps += [ "ability_runtime:app_manager" ]
+    defines += [ "HIDUMPER_ABILITY_BASE_ENABLE" ]
+  }
+  if (is_emulator) {
+    defines += [ "IS_EMULATOR" ]
+  }
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("HidumperClientTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "hidumper_client_test.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  deps = [
+    "${hidumper_frameworks_path}:hidumperclient",
+    "${hidumper_service_path}:hidumper_client",
+  ]
+
+  external_deps = [
+    "ability_base:configuration",
+    "ability_runtime:app_manager",
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "samgr:samgr_proxy",
+  ]
+
+  defines = []
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+  if (is_emulator) {
+    defines += [ "IS_EMULATOR" ]
+  }
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("HidumperZidlTest") {
+  module_out_path = module_output_path
+
+  sources = [ "hidumper_zidl_test.cpp" ]
+
+  configs = [
+    ":module_private_config",
+    "${hidumper_service_path}:zidl_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:zidl_service" ]
+
+  external_deps = [
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+}
+
+ohos_unittest("DumpCommonUtilsTest") {
+  module_out_path = module_output_path
+
+  sources = [ "dump_common_utils_test.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "zlib:shared_libz",
+  ]
+}
+
+ohos_unittest("EventDumperTest") {
+  module_out_path = module_output_path
+
+  sources = [ "event_dumper_test.cpp" ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  configs = [ ":module_private_config" ]
+
+  cflags = [
+    "-Dprivate=public",  #allow test code access private members
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hicollie:libhicollie",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hisysevent:libhisyseventmanager",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_unittest("ZipFileCleanerTest") {
+  module_out_path = module_output_path
+
+  sources = [ "zip_file_cleaner_test.cpp" ]
+
+  configs = [
+    "${hidumper_utils_path}:utils_config",
+    ":module_private_config",
+  ]
+
+  deps = [ "${hidumper_service_path}:hidumperservice_source" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
+    "zlib:shared_libz",
+  ]
+}
+
+ohos_unittest("HidumperFunctionTest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "hidumper_function_test.cpp",
+    "hidumper_function_test_env.cpp",
+    "hidumper_test_utils.cpp",
+  ]
+
+  configs = [ ":module_private_config" ]
+
+  # The function-test HAP targets do not exist in CI precise (tdd) builds (see
+  # hidumper.gni ohos_module_precise_build), so the dependency is conditional.
+  # Full builds and the part compile keep the HAPs wired into the test resources.
+  deps = []
+  if (!ohos_module_precise_build) {
+    deps += [ "//base/hiviewdfx/hidumper/test/resource/hidumper_func_hap:hidumper_func_hap" ]
+  }
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+  ]
+
+  resource_config_file = "//base/hiviewdfx/hidumper/test/resource/ohos_test.xml"
+
+  defines = []
+  if (hidumper_hiviewdfx_hiview_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_HIVIEW_ENABLE" ]
+  }
+  if (hidumper_hiviewdfx_plugin_enable) {
+    defines += [ "HIDUMPER_HIVIEWDFX_PLUGIN_ENABLE" ]
+  }
+  if (is_emulator) {
+    defines += [ "IS_EMULATOR" ]
+  }
+}
+
+###############################################################################
+group("unittest") {
+  testonly = true
+
+  deps = [
+    # deps file
+    ":DumpCommonUtilsTest",
+    ":EventDumperTest",
+    ":GetHeapInfoTest",
+    ":HidumperClientTest",
+    ":HidumperConfigUtilsTest",
+    ":HidumperDataInventoryTest",
+    ":HidumperDumpersTest",
+    ":HidumperFunctionTest",
+    ":HidumperInnerkitsTest",
+    ":HidumperManagerTest",
+    ":HidumperMemoryTest",
+    ":HidumperOutputTest",
+    ":HidumperPrivacyTest",
+    ":HidumperServiceTest",
+    ":HidumperZidlTest",
+    ":ZipFileCleanerTest",
+    ":MemoryDumperTest",
+    ":SADumperTest",
+    ":StorageInfoTaskTest",
+  ]
+
+  if (hidumper_hiviewdfx_hiview_enable) {
+    deps += [ ":HidumperCpuServiceTest" ]
+  }
+}
+###############################################################################
