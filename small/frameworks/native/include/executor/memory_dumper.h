@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,12 +18,10 @@
 #include <string>
 #include <map>
 #include <memory>
-#include <future>
 #include "hidumper_executor.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-class DumpArktsHeapInfo;
 class MemoryDumper : public HidumperExecutor {
 public:
     MemoryDumper();
@@ -37,44 +35,20 @@ public:
     DumpStatus AfterExecute() override;
 private:
     int pid_ = 0;
-    int rawParamFd_ = 0;
+    int rawParamFd_ = -1;
     int timeInterval_ = 0;
-    bool isShowMaps_ = false;
-    bool isShowSmapsInfo_ = false;
     bool isReceivedSigInt_ = false;
     bool dumpMemPrune_ = false;
-    bool showAshmem_ = false;
-    bool showDmabuf_ = false;
-    bool showGpumem_ = false;
-    bool showArktsHeap_ = false;
-    bool showLeakThread_ = false;
-    bool isZip_ = false;
 
     DumpStatus status_ = DUMP_FAIL;
     StringMatrix dumpDatas_;
-    using GetMemByPidFunc = int (*)(int, StringMatrix, bool, bool, bool);
-    using GetMemNoPidFunc = int (*)(int, StringMatrix);
-    using GetMemPruneNoPidFunc = int (*)(int, StringMatrix);
-    using GetMemSmapsByPidFunc = int (*)(int, StringMatrix, bool);
-    using GetMemByTimeIntervalFunc = void (*)(int, int, int);
-    using SetReceivedSigIntFunc = void (*)(bool);
-
-    std::future<std::string> arktsHeapFuture_;
-    std::future<std::string> leakThreadFuture_;
 
     void GetMemByPid();
     void GetMemNoPid();
     void GetMemPruneNoPid();
-    void GetMemSmapsByPid();
     void GetMemByTimeInterval();
     void SetReceivedSigInt();
-    void StartArktsHeapFetch(int32_t pid);
-    void MergeArktsHeapResult();
-    bool ParseArktsHeapResult(const std::string &result, size_t &heapSize, std::string &threadName);
-    void AppendArktsHeapData(const std::string &result);
-    void StartLeakThreadFetch(int32_t pid);
-    void MergeLeakThreadResult();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-#endif
+#endif // MEMORY_DUMPER_H

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "executor/file_stream_dumper.h"
+#include <cstring>
 #include <dirent.h>
 #include <unistd.h>
 #include "dump_utils.h"
@@ -131,7 +132,7 @@ DumpStatus FileStreamDumper::ReadLineInFile()
             line_buffer[read-1] = '\0'; // replease \n
         }
         std::string line = line_buffer;
-        if (needHideAddr_ && DumpUtils::IsUserMode()) {
+        if (needHideAddr_) {
             line = ReplaceAddresses(line);
         }
         std::vector<std::string> line_vector;

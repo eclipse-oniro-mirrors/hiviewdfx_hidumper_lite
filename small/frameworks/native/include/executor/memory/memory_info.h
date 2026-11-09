@@ -20,13 +20,9 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "executor/memory/get_heap_info.h"
 #include "executor/memory/parse/meminfo_data.h"
 #include "common.h"
 #include "time.h"
-#include "graphic_memory_collector.h"
-#include "memory_collector.h"
-#include "meminfo.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -56,7 +52,6 @@ public:
     using ValueMap = std::map<std::string, uint64_t>;
     using GroupMap = std::map<std::string, ValueMap>;
     using MemFun = std::function<void(MemInfoData::MemInfo&, uint64_t)>;
-    using MemoryItemMap = std::map<std::string, MemoryItem>;
     using PageType = std::vector<std::pair<std::string, uint64_t>>;
     using PageTypePair = std::pair<PageType, PageType>;
 
@@ -94,30 +89,6 @@ private:
     const static int VSS_BIT = 4;
     const static int BYTE_PER_KB = 1024;
     const std::string ZERO = "0";
-    const std::vector<std::string> MEMORY_CLASS_VEC = {
-        "graph", "ark ts heap", "arkts-static heap", ".db", "dev", "dmabuf", "guard", ".hap",
-        "native heap", ".so", "stack", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap", "kotlin heap",
-        "rn-hermes heap", "dart heap", "other"
-    };
-    const std::vector<std::string> MEMORY_PRINT_ORDER_VEC = {
-        "ark ts heap", "arkts-static heap", "guard", "native heap", ".hap", "AnonPage other",
-        "stack", ".db", ".so", "dev", "dmabuf", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap",
-        "kotlin heap", "rn-hermes heap", "dart heap"
-    };
-    const std::vector<std::string> NATIVE_HEAP_TAG = {"heap", "jemalloc meta", "jemalloc heap",
-        "brk heap", "musl heap", "mmap heap"};
-    const std::map<MemoryItemType, std::string> NATIVE_HEAP_MAP = {
-        {MemoryItemType::MEMORY_ITEM_TYPE_HEAP, "heap"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_ANON_NATIVE_HEAP_JEMALLOC_META, "jemalloc meta"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_ANON_NATIVE_HEAP_JEMALLOC, "jemalloc heap"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_ANON_NATIVE_HEAP_BRK, "brk heap"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_ANON_NATIVE_HEAP_META, "musl heap"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_ANON_NATIVE_HEAP_MMAP, "mmap heap"},
-    };
-    const std::map<MemoryItemType, std::string> GRAPHIC_MAP = {
-        {MemoryItemType::MEMORY_ITEM_TYPE_GRAPH_GL, "GL"},
-        {MemoryItemType::MEMORY_ITEM_TYPE_GRAPH_GRAPHICS, "Graph"},
-    };
 
     bool isReady_ = false;
     bool dumpPrune_ = false;
@@ -137,12 +108,7 @@ private:
         {"System", {}}, {"Foreground", {}}, {"Suspend-delay", {}},
         {"Perceived", {}}, {"Background", {}}, {"Undefined", {}},
     };
-    MemoryItemMap memoryItemMap_;
-    MemInfoData::GraphicsMemory graphicsMemory_ = {0};
 
-    void InsertMemoryTitle(StringMatrix result);
-    void GetResult(const int32_t& pid, StringMatrix result, std::unique_ptr<ProcessMemoryDetail>& processMemoryDetail);
-    void CollectProcessMemoryDetail(const int32_t& pid, std::unique_ptr<ProcessMemoryDetail>& processMemoryDetail);
     std::string AddKbUnit(const uint64_t &value) const;
     bool GetMemByProcessPid(const int32_t &pid, MemInfoData::MemUsage &usage);
     static bool GetSmapsInfoNoPid(const int32_t &pid, GroupMap &result);
@@ -156,12 +122,7 @@ private:
     void GetRamUsage(const GroupMap &smapsinfos, const ValueMap &meminfo, StringMatrix result);
     void GetPurgTotal(const ValueMap &meminfo, StringMatrix result);
     void GetPurgByPid(const int32_t &pid, StringMatrix result);
-    void GetDma(const uint64_t& dma, StringMatrix result);
-    void GetHiaiServerIon(const int32_t &pid, StringMatrix result);
-    void GetNativeHeap(const std::unique_ptr<MemoryDetail>& detail, StringMatrix result);
-    void GetNativeValue(const std::string& tag, const GroupMap& nativeGroupMap, StringMatrix result);
     void GetRamCategory(const GroupMap &smapsinfos, const ValueMap &meminfos, StringMatrix result);
-    void UpdateGraphicsMemoryRet(const std::string& title, const uint64_t& value, StringMatrix result);
     void AddBlankLine(StringMatrix result);
     void MemUsageToMatrix(const MemInfoData::MemUsage &memUsage, StringMatrix result);
     void PairToStringMatrix(const std::string &titleStr, std::vector<std::pair<std::string, uint64_t>> &vec,
@@ -181,7 +142,6 @@ private:
     static void InitMemInfo(MemInfoData::MemInfo &memInfo);
     static void InitMemUsage(MemInfoData::MemUsage &usage);
     void GetSortedMemoryInfoNoPid(StringMatrix result);
-    bool GetGraphicsMemory(int32_t pid, MemInfoData::GraphicsMemory &graphicsMemory, GraphicType graphicType);
 #ifdef HIDUMPER_MEMMGR_ENABLE
     void GetMemoryByAdj(StringMatrix result);
 #endif
@@ -196,27 +156,10 @@ private:
     void SetHeapAlloc(MemInfoData::MemInfo &meminfo, uint64_t value);
     void SetHeapFree(MemInfoData::MemInfo &meminfo, uint64_t value);
 
-    // hidumper --mem pid
-    void UpdateResult(const int32_t& pid, const std::unique_ptr<ProcessMemoryDetail>& processMemoryDetail,
-        std::unique_ptr<MemoryDetail>& nativeHeapDetail, StringMatrix result);
-    void GetGraphicsMemoryByDetail(const std::unique_ptr<MemoryDetail>& detail, StringMatrix result);
-    void UpdatePageDetail(std::unique_ptr<MemoryDetail>& anonPageDetail,
-        std::unique_ptr<MemoryDetail>& filePageDetail, const std::unique_ptr<MemoryDetail>& tempDetail);
-    void UpdateTotalDetail(const std::unique_ptr<ProcessMemoryDetail>& detail,
-        const std::unique_ptr<MallHeapInfo>& heapInfo, StringMatrix result);
-    void SetDetailRet(const std::string& memoryClassStr, const std::unique_ptr<MemoryDetail>& detail,
-        const std::unique_ptr<MallHeapInfo>& heapInfo, StringMatrix result);
-    void SetValueForRet(const std::string& value, std::vector<std::string>& tempResult);
-    void SetNativeDetailRet(const std::string& nativeClassStr, const std::unique_ptr<MemoryItem>& item,
-        StringMatrix result);
     void GetAshmem(const int32_t &pid, StringMatrix result, bool showAshmem);
     bool GetDmaBuf(const int32_t &pid, StringMatrix result, bool showDmaBuf);
     bool GetGpumem(const int32_t &pid, StringMatrix result, bool showGpumem);
     bool GetDmaBufByProc(const int32_t &pid, StringMatrix result, const std::vector<std::string>& showTitles);
-    bool DisposeDmaBufInfo(const std::vector<MemInfo::DmaNodeInfoWrapper>& dmaBufInfos,
-        const std::vector<std::string>& showTitles, StringMatrix result);
-    bool FillResultForDmaBuf(const std::vector<std::vector<std::string>>& dmaBufResults,
-        const std::vector<int>& columnWidths, StringMatrix result);
     int CalculateStars(const std::vector<int>& pssValues, int currentPSS);
     void WriteStdout(const std::string& s);
     void ClearPreviousLines(int lineCount);

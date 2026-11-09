@@ -48,13 +48,10 @@ public:
     void NewLineMethod(std::string &str);
 
 private:
-    int fd_;
-    std::string path_;
     StringMatrix dumpDatas_;
     std::string dataStr_;
     std::vector<std::string> lineData_;
     std::shared_ptr<RawParam> ptrReqCtl_;
-    static const mode_t OPEN_ARGV;
     std::mutex mutex_;
     void WriteToFd(std::string &str);
 };

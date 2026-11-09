@@ -15,17 +15,17 @@
 #include "executor/memory/memory_info.h"
 #include <algorithm>
 #include <atomic>
+#include <sys/stat.h>
 #include <dlfcn.h>
 #include <cinttypes>
 #include <fstream>
 #include <numeric>
 #include <sstream>
+#include <iomanip>
 #include <thread>
-#include <v1_0/imemory_tracker_interface.h>
 
 #include "dump_common_utils.h"
 #include "dump_utils.h"
-#include "dumper_plugin.h"
 #include "executor/memory/get_cma_info.h"
 #include "executor/memory/get_hardware_info.h"
 #include "executor/memory/get_kernel_info.h"
@@ -38,7 +38,6 @@
 #include "executor/memory/parse/parse_smaps_rollup_info.h"
 #include "executor/memory/parse/parse_smaps_info.h"
 #include "file_ex.h"
-#include "hdf_base.h"
 #include "hilog_wrapper.h"
 #ifdef HIDUMPER_MEMMGR_ENABLE
 #include "mem_mgr_constant.h"
@@ -50,7 +49,6 @@
 #include "common/dumper_constant.h"
 
 using namespace std;
-using namespace OHOS::HDI::Memorytracker::V1_0;
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -90,213 +88,23 @@ MemoryInfo::MemoryInfo()
         bind(&MemoryInfo::SetHeapAlloc, this, placeholders::_1, placeholders::_2)));
     methodVec_.push_back(make_pair(MEMINFO_HEAP_FREE,
         bind(&MemoryInfo::SetHeapFree, this, placeholders::_1, placeholders::_2)));
-    LoadPlugin();
 }
 
 MemoryInfo::~MemoryInfo()
 {
-    UnloadPlugin();
 }
 
-void MemoryInfo::InsertMemoryTitle(StringMatrix result)
+void MemoryInfo::WriteStdout(const std::string& s)
 {
-    // Pss        Shared   ---- this line is line1
-    // Total      Clean    ---- this line is line2
-    // (KB)         (KB)    ---- this line is line3
-    // -----      ------   ---- this line is line4
-
-    vector<string> line1;
-    vector<string> line2;
-    vector<string> line3;
-    vector<string> line4;
-
-    string space = " ";
-    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, space);
-
-    string separator = "-";
-    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, separator);
-
-    string unit = "(" + MemoryUtil::GetInstance().KB_UNIT_ + " )";
-    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, unit);
-
-    // Add  spaces at the beginning of the line
-    line1.push_back(space + BLANK_);
-    line2.push_back(space + BLANK_);
-    line3.push_back(space + BLANK_);
-    line4.push_back(space);
-
-    for (string str : MemoryFilter::GetInstance().TITLE_HAS_PID_) {
-        vector<string> types;
-        StringUtils::GetInstance().StringSplit(str, "_", types);
-        if (types.size() == TYPE_SIZE) {
-            string title1 = types.at(0);
-            StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, title1);
-            line1.push_back(title1 + BLANK_);
-
-            string title2 = types.at(1);
-            StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, title2);
-            line2.push_back(title2 + BLANK_);
-            line3.push_back(unit + BLANK_);
-            line4.push_back(separator + SEPARATOR_);
-        }
-    }
-    result->push_back(line1);
-    result->push_back(line2);
-    result->push_back(line3);
-    result->push_back(line4);
+    write(rawParamFd_, s.c_str(), s.size());
 }
 
-void MemoryInfo::UpdateResult(const int32_t& pid, const unique_ptr<ProcessMemoryDetail>& processMemoryDetail,
-    unique_ptr<MemoryDetail>& nativeHeapDetail, StringMatrix result)
+void MemoryInfo::ClearPreviousLines(int lineCount)
 {
-    unique_ptr<MallHeapInfo> mallocHeapInfo = make_unique<MallHeapInfo>();
-    unique_ptr<GetHeapInfo> getHeapInfo = make_unique<GetHeapInfo>();
-    getHeapInfo->GetMallocHeapInfo(pid, mallocHeapInfo);
-    unique_ptr<MemoryDetail> anonPageDetail = make_unique<MemoryDetail>();
-    unique_ptr<MemoryDetail> filePageDetail = make_unique<MemoryDetail>();
-    vector<MemoryDetail> memoryDetails = processMemoryDetail->details;
-    map<string, unique_ptr<MemoryDetail>> allDetailMap;
-    for (const auto& memoryDetail : memoryDetails) {
-        MemoryClass memoryClass = memoryDetail.memoryClass;
-        if (static_cast<int>(memoryClass) < 0 || static_cast<size_t>(memoryClass) > MEMORY_CLASS_VEC.size()) {
-            DUMPER_HILOGE(MODULE_SERVICE, "memoryClass:%{public}d is not exist", memoryClass);
-            continue;
-        }
-        string memoryClassStr = MEMORY_CLASS_VEC[static_cast<int>(memoryClass)];
-        unique_ptr<MemoryDetail> tempDetail = make_unique<MemoryDetail>(memoryDetail);
-        if (memoryClassStr == "graph") {
-            GetGraphicsMemoryByDetail(tempDetail, result);
-        } else if (memoryClassStr == MemoryFilter::GetInstance().NATIVE_HEAP_LABEL) {
-            nativeHeapDetail = make_unique<MemoryDetail>(memoryDetail);
-        } else if (memoryClassStr == MEMINFO_OTHER) {
-            UpdatePageDetail(anonPageDetail, filePageDetail, tempDetail);
-            tempDetail = std::move(anonPageDetail);
-            memoryClassStr = MEMINFO_ANONPAGE_OTHER;
-        }
-        auto it = std::find(MEMORY_PRINT_ORDER_VEC.begin(), MEMORY_PRINT_ORDER_VEC.end(), memoryClassStr);
-        if (it!= MEMORY_PRINT_ORDER_VEC.end()) {
-            allDetailMap[memoryClassStr] = std::move(tempDetail);
-        }
+    for (int i = 0; i < lineCount; ++i) {
+        WriteStdout("\033[F");
+        WriteStdout("\033[2K");
     }
-    for (const auto &classStr : MEMORY_PRINT_ORDER_VEC) {
-        auto it = allDetailMap.find(classStr);
-        if (it != allDetailMap.end()) {
-            SetDetailRet(classStr, it->second, mallocHeapInfo, result);
-        }
-    }
-    SetDetailRet(MEMINFO_FILEPAGE_OTHER, filePageDetail, mallocHeapInfo, result);
-    UpdateTotalDetail(processMemoryDetail, mallocHeapInfo, result);
-}
-
-void MemoryInfo::UpdatePageDetail(std::unique_ptr<MemoryDetail>& anonPageDetail,
-                                  std::unique_ptr<MemoryDetail>& filePageDetail,
-                                  const std::unique_ptr<MemoryDetail>& tempDetail)
-{
-    if (!tempDetail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "detail is nullptr");
-        return;
-    }
-    vector<MemoryItem> memoryItems = tempDetail->items;
-    for (const auto& memoryItem : memoryItems) {
-        int32_t iNode = memoryItem.iNode;
-        if (iNode == 0) {
-            anonPageDetail->totalPss += memoryItem.pss;
-            anonPageDetail->totalSharedClean += memoryItem.sharedClean;
-            anonPageDetail->totalSharedDirty += memoryItem.sharedDirty;
-            anonPageDetail->totalPrivateClean += memoryItem.privateClean;
-            anonPageDetail->totalPrivateDirty += memoryItem.privateDirty;
-            anonPageDetail->totalSwap += memoryItem.swap;
-            anonPageDetail->totalSwapPss += memoryItem.swapPss;
-        } else {
-            filePageDetail->totalPss += memoryItem.pss;
-            filePageDetail->totalSharedClean += memoryItem.sharedClean;
-            filePageDetail->totalSharedDirty += memoryItem.sharedDirty;
-            filePageDetail->totalPrivateClean += memoryItem.privateClean;
-            filePageDetail->totalPrivateDirty += memoryItem.privateDirty;
-            filePageDetail->totalSwap += memoryItem.swap;
-            filePageDetail->totalSwapPss += memoryItem.swapPss;
-        }
-    }
-}
-
-void MemoryInfo::SetDetailRet(const std::string& memoryClassStr, const std::unique_ptr<MemoryDetail>& detail,
-                              const std::unique_ptr<MallHeapInfo>& heapInfo, StringMatrix result)
-{
-    if (!detail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "detail is nullptr");
-        return;
-    }
-    vector<string> tempResult;
-    string tempTitle = memoryClassStr;
-    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, tempTitle);
-    tempResult.push_back(tempTitle + BLANK_);
-    SetValueForRet(to_string(detail->totalPss), tempResult);
-    SetValueForRet(to_string(detail->totalSharedClean), tempResult);
-    SetValueForRet(to_string(detail->totalSharedDirty), tempResult);
-    SetValueForRet(to_string(detail->totalPrivateClean), tempResult);
-    SetValueForRet(to_string(detail->totalPrivateDirty), tempResult);
-    SetValueForRet(to_string(detail->totalSwap), tempResult);
-    SetValueForRet(to_string(detail->totalSwapPss), tempResult);
-    if (memoryClassStr == MemoryFilter::GetInstance().NATIVE_HEAP_LABEL) {
-        SetValueForRet(to_string(heapInfo->size), tempResult);
-        SetValueForRet(to_string(heapInfo->alloc), tempResult);
-        SetValueForRet(to_string(heapInfo->free), tempResult);
-    } else {
-        for (int i = 0; i < MALLOC_HEAP_TYPES; i++) {
-            SetValueForRet(ZERO, tempResult);
-        }
-    }
-    result->push_back(tempResult);
-}
-
-void MemoryInfo::SetValueForRet(const std::string& value, std::vector<std::string>& tempResult)
-{
-    std::string tempStr = value;
-    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, tempStr);
-    tempResult.push_back(tempStr + BLANK_);
-}
-
-void MemoryInfo::UpdateTotalDetail(const std::unique_ptr<ProcessMemoryDetail>& detail,
-                                   const std::unique_ptr<MallHeapInfo>& heapInfo, StringMatrix result)
-{
-    if (!detail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "detail is nullptr");
-        return;
-    }
-    vector<string> lines;
-    vector<string> values;
-    uint64_t totalPrivateDirty = static_cast<uint64_t>(detail->totalPrivateDirty) + graphicsMemory_.gl +
-        graphicsMemory_.graph;
-    currentPss_ = detail->totalAllPss;
-
-    string totalTitle = MEMINFO_TOTAL;
-    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, totalTitle);
-    values.push_back(totalTitle + BLANK_);
-
-    string separator = "-";
-    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, SEPARATOR_, false, separator);
-    lines.push_back(separator + SEPARATOR_);
-
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalAllPss), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalSharedClean), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalSharedDirty), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalPrivateClean), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(totalPrivateDirty), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalSwap), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(detail->totalSwapPss), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(heapInfo->size), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(heapInfo->alloc), lines, values);
-    MemoryUtil::GetInstance().SetMemTotalValue(to_string(heapInfo->free), lines, values);
-
-    // delete the last separator
-    if (!lines.empty()) {
-        lines.pop_back();
-        string separator = "-";
-        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, separator);
-        lines.push_back(separator);
-    }
-    result->push_back(lines);
-    result->push_back(values);
 }
 
 int MemoryInfo::CalculateStars(const std::vector<int>& pssValues, int currentPSS)
@@ -312,19 +120,6 @@ int MemoryInfo::CalculateStars(const std::vector<int>& pssValues, int currentPSS
     }
     double stdValue = static_cast<double>(currentPSS - minPSS) / (maxPSS - minPSS);
     return static_cast<int>(stdValue * (MAX_STARS_NUM - ONE_STAR) + ONE_STAR);
-}
-
-void MemoryInfo::WriteStdout(const std::string& s)
-{
-    write(rawParamFd_, s.c_str(), s.size());
-}
-
-void MemoryInfo::ClearPreviousLines(int lineCount)
-{
-    for (int i = 0; i < lineCount; ++i) {
-        WriteStdout("\033[F");
-        WriteStdout("\033[2K");
-    }
 }
 
 std::string MemoryInfo::GenerateLine(const std::vector<int>& pssValues, int index)
@@ -442,6 +237,7 @@ void MemoryInfo::SetReceivedSigInt(bool isReceivedSigInt)
 
 void MemoryInfo::RedirectMemoryInfo(int timeIndex, StringMatrix result)
 {
+    mkdir("/data/log/hidumper", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     int redirectFd = DumpUtils::FdToWrite("/data/log/hidumper/record_mem.txt");
     if (redirectFd <= -1) {
         DUMPER_HILOGE(MODULE_COMMON, "write to record_mem.txt failed");
@@ -486,113 +282,107 @@ void MemoryInfo::GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const i
     DUMPER_HILOGI(MODULE_SERVICE, "GetMemoryInfoByTimeInterval timeInterval:%{public}d end", timeInterval);
 }
 
+namespace {
+struct SmapsSummary {
+    uint64_t pss = 0;
+    uint64_t rss = 0;
+    uint64_t swap = 0;
+    uint64_t swapPss = 0;
+    uint64_t privateClean = 0;
+    uint64_t privateDirty = 0;
+    uint64_t sharedClean = 0;
+    uint64_t sharedDirty = 0;
+};
+
+bool ReadSmapsSummary(int32_t pid, SmapsSummary& summary)
+{
+    std::string path = "/proc/" + std::to_string(pid) + "/smaps";
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return false;
+    }
+    std::string line;
+    while (std::getline(file, line)) {
+        auto pos = line.find(':');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        std::istringstream iss(line.substr(pos + 1));
+        uint64_t value = 0;
+        if (!(iss >> value)) {
+            continue;
+        }
+        std::string key = line.substr(0, pos);
+        if (key == "Pss") {
+            summary.pss += value;
+        } else if (key == "Rss") {
+            summary.rss += value;
+        } else if (key == "Swap") {
+            summary.swap += value;
+        } else if (key == "SwapPss") {
+            summary.swapPss += value;
+        } else if (key == "Private_Clean") {
+            summary.privateClean += value;
+        } else if (key == "Private_Dirty") {
+            summary.privateDirty += value;
+        } else if (key == "Shared_Clean") {
+            summary.sharedClean += value;
+        } else if (key == "Shared_Dirty") {
+            summary.sharedDirty += value;
+        }
+    }
+    return true;
+}
+
+void AppendMetricRow(MemoryInfo::StringMatrix result, const std::string& name, uint64_t value)
+{
+    vector<string> row;
+    string title = name + ":";
+    StringUtils::GetInstance().SetWidth(20, ' ', false, title);
+    row.push_back(title + to_string(value) + MemoryUtil::GetInstance().KB_UNIT_);
+    result->push_back(row);
+}
+} // namespace
+
 bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result,
                                     bool showAshmem, bool showDmaBuf, bool showGpumem)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    unique_ptr<ProcessMemoryDetail> processMemoryDetail = nullptr;
-    CollectProcessMemoryDetail(pid, processMemoryDetail);
-    InsertMemoryTitle(result);
-    GetResult(pid, result, processMemoryDetail);
+    SmapsSummary summary;
+    if (!ReadSmapsSummary(pid, summary)) {
+        DUMPER_HILOGE(MODULE_SERVICE, "read smaps fail, pid:%{public}d", pid);
+        return false;
+    }
+    currentPss_ = summary.pss;
+
+    string name = GetProcName(pid);
+    vector<string> titleRow;
+    titleRow.push_back("Process Memory Information : " + name + "(pid = " + to_string(pid) + ")");
+    result->push_back(titleRow);
+
+    AppendMetricRow(result, "VmPeak", GetProcValue(pid, "VmPeak"));
+    AppendMetricRow(result, "VmSize", GetProcValue(pid, "VmSize"));
+    AppendMetricRow(result, "VmRSS", GetProcValue(pid, "VmRSS"));
+    AppendMetricRow(result, "RssAnon", GetProcValue(pid, "RssAnon"));
+    AppendMetricRow(result, "RssFile", GetProcValue(pid, "RssFile"));
+    AppendMetricRow(result, "RssShmem", GetProcValue(pid, "RssShmem"));
+    AppendMetricRow(result, "VmData", GetProcValue(pid, "VmData"));
+    AppendMetricRow(result, "VmSwap", GetProcValue(pid, "VmSwap"));
+
+    AppendMetricRow(result, "Rss(total)", summary.rss);
+    AppendMetricRow(result, "Pss(total)", summary.pss);
+    AppendMetricRow(result, "Private_Clean", summary.privateClean);
+    AppendMetricRow(result, "Private_Dirty", summary.privateDirty);
+    AppendMetricRow(result, "Shared_Clean", summary.sharedClean);
+    AppendMetricRow(result, "Shared_Dirty", summary.sharedDirty);
+    AppendMetricRow(result, "Swap", summary.swap);
+    AppendMetricRow(result, "SwapPss", summary.swapPss);
+
     GetPurgByPid(pid, result);
-    GetDma(graphicsMemory_.graph, result);
-    GetDmaBuf(pid, result, showDmaBuf);
-    GetHiaiServerIon(pid, result);
     GetAshmem(pid, result, showAshmem);
+    GetDmaBuf(pid, result, showDmaBuf);
     GetGpumem(pid, result, showGpumem);
     return true;
-}
-
-void MemoryInfo::CollectProcessMemoryDetail(const int32_t& pid,
-                                            std::unique_ptr<ProcessMemoryDetail>& processMemoryDetail)
-{
-    DUMPER_HILOGD(MODULE_SERVICE, "CollectProcessMemoryDetail pid:%{public}d start", pid);
-    std::shared_ptr<UCollectUtil::MemoryCollector> collector = UCollectUtil::MemoryCollector::Create();
-    CollectResult<ProcessMemoryDetail> collectRet;
-    collectRet = collector->CollectProcessMemoryDetail(pid, GraphicMemOption::LOW_LATENCY);
-    if (collectRet.retCode != UCollect::UcError::SUCCESS) {
-        DUMPER_HILOGE(MODULE_SERVICE, "collect process memory error, ret:%{public}d", collectRet.retCode);
-        return;
-    }
-    processMemoryDetail = make_unique<ProcessMemoryDetail>(collectRet.data);
-    if (!processMemoryDetail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "processMemoryDetail is nullptr");
-        return;
-    }
-
-    vector<MemoryDetail> memoryDetails = processMemoryDetail->details;
-    int maxTitleWidth = 0;
-    for (const auto& memoryDetail : memoryDetails) {
-        MemoryClass memoryClass = memoryDetail.memoryClass;
-        if (static_cast<int>(memoryClass) < 0 || static_cast<size_t>(memoryClass) > MEMORY_CLASS_VEC.size()) {
-            continue;
-        }
-        string memoryClassStr = MEMORY_CLASS_VEC[static_cast<int>(memoryClass)];
-        maxTitleWidth = std::max(maxTitleWidth, static_cast<int>(memoryClassStr.length()));
-        if (memoryClassStr == MEMINFO_OTHER) {
-            maxTitleWidth = std::max(maxTitleWidth, static_cast<int>(MEMINFO_ANONPAGE_OTHER.length()));
-        }
-    }
-    TITLE_WIDTH_ = maxTitleWidth;
-
-    DUMPER_HILOGD(MODULE_SERVICE, "CollectProcessMemoryDetail pid:%{public}d end", pid);
-}
-
-void MemoryInfo::GetResult(const int32_t& pid, StringMatrix result,
-                           std::unique_ptr<ProcessMemoryDetail>& processMemoryDetail)
-{
-    if (processMemoryDetail == nullptr) {
-        return;
-    }
-    unique_ptr<MemoryDetail> nativeHeapDetail = {nullptr};
-    UpdateResult(pid, processMemoryDetail, nativeHeapDetail, result);
-    GetNativeHeap(nativeHeapDetail, result);
-}
-
-void MemoryInfo::GetGraphicsMemoryByDetail(const std::unique_ptr<MemoryDetail>& detail, StringMatrix result)
-{
-    if (!detail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "detail is nullptr");
-        return;
-    }
-    vector<MemoryItem> memoryItems = detail->items;
-    for (const auto& memoryItem : memoryItems) {
-        MemoryItemType memoryItemType = memoryItem.type;
-        auto info = GRAPHIC_MAP.find(memoryItemType);
-        if (info == GRAPHIC_MAP.end()) {
-            DUMPER_HILOGE(MODULE_SERVICE, "memoryItemType = %{public}d is not exist", memoryItemType);
-            continue;
-        }
-        string type = info->second;
-        if (type == MemoryFilter::GetInstance().GL_OUT_LABEL) {
-            graphicsMemory_.gl = memoryItem.pss;
-        } else if (type == MemoryFilter::GetInstance().GRAPH_OUT_LABEL) {
-            graphicsMemory_.graph = memoryItem.pss;
-        }
-    }
-    UpdateGraphicsMemoryRet(MemoryFilter::GetInstance().GL_OUT_LABEL, graphicsMemory_.gl, result);
-    UpdateGraphicsMemoryRet(MemoryFilter::GetInstance().GRAPH_OUT_LABEL, graphicsMemory_.graph, result);
-}
-
-void MemoryInfo::UpdateGraphicsMemoryRet(const string& title, const uint64_t& value, StringMatrix result)
-{
-    map<string, uint64_t> valueMap;
-    valueMap.insert(pair<string, uint64_t>(MEMINFO_PSS, value));
-    valueMap.insert(pair<string, uint64_t>(MEMINFO_PRIVATE_DIRTY, value));
-    vector<string> tempResult;
-    string tempTitle = title;
-    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, tempTitle);
-    tempResult.push_back(tempTitle + BLANK_);
-    for (const auto &tag : MemoryFilter::GetInstance().VALUE_WITH_PID) {
-        auto it = valueMap.find(tag);
-        string value = ZERO;
-        if (it != valueMap.end()) {
-            value = to_string(it->second);
-        }
-        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, value);
-        tempResult.push_back(value + BLANK_);
-    }
-    result->push_back(tempResult);
 }
 
 string MemoryInfo::AddKbUnit(const uint64_t &value) const
@@ -797,108 +587,6 @@ void MemoryInfo::GetPurgByPid(const int32_t &pid, StringMatrix result)
     result->push_back(purgPin);
 }
 
-void MemoryInfo::GetNativeHeap(const std::unique_ptr<MemoryDetail>& detail, StringMatrix result)
-{
-    if (!detail) {
-        DUMPER_HILOGE(MODULE_SERVICE, "detail is nullptr");
-        return;
-    }
-    AddBlankLine(result);
-    vector<string> title;
-    title.push_back(MemoryFilter::GetInstance().NATIVE_HEAP_LABEL + ":");
-    result->push_back(title);
-
-    vector<MemoryItem> memoryItems = detail->items;
-    for (const auto& memoryItem : memoryItems) {
-        MemoryItemType memoryItemType = memoryItem.type;
-        auto info = NATIVE_HEAP_MAP.find(memoryItemType);
-        if (info == NATIVE_HEAP_MAP.end()) {
-            DUMPER_HILOGE(MODULE_SERVICE, "memoryItemType = %{public}d is not exist", memoryItemType);
-            continue;
-        }
-        string type = info->second;
-        auto it = memoryItemMap_.find(type);
-        if (it == memoryItemMap_.end()) {
-            memoryItemMap_.insert(pair<string, MemoryItem>(type, memoryItem));
-        } else {
-            it->second.pss += memoryItem.pss;
-            it->second.sharedClean += memoryItem.sharedClean;
-            it->second.sharedDirty += memoryItem.sharedDirty;
-            it->second.privateClean += memoryItem.privateClean;
-            it->second.privateDirty += memoryItem.privateDirty;
-            it->second.swap += memoryItem.swap;
-            it->second.swapPss += memoryItem.swapPss;
-        }
-    }
-    for (const auto& type: NATIVE_HEAP_TAG) {
-        auto it = memoryItemMap_.find(type);
-        if (it == memoryItemMap_.end()) {
-            continue;
-        }
-        string heapTitle = it->first;
-        unique_ptr<MemoryItem> item = make_unique<MemoryItem>(it->second);
-        SetNativeDetailRet(type, item, result);
-    }
-}
-
-void MemoryInfo::SetNativeDetailRet(const std::string& nativeClassStr, const std::unique_ptr<MemoryItem>& item,
-                                    StringMatrix result)
-{
-    vector<string> heap;
-    string heapTitle = nativeClassStr + ":";
-    StringUtils::GetInstance().SetWidth(RAM_WIDTH_, BLANK_, false, heapTitle);
-    heap.push_back(heapTitle);
-    SetValueForRet(to_string(item->pss), heap);
-    SetValueForRet(to_string(item->sharedClean), heap);
-    SetValueForRet(to_string(item->sharedDirty), heap);
-    SetValueForRet(to_string(item->privateClean), heap);
-    SetValueForRet(to_string(item->privateDirty), heap);
-    SetValueForRet(to_string(item->swap), heap);
-    SetValueForRet(to_string(item->swapPss), heap);
-    for (int i = 0; i < MALLOC_HEAP_TYPES; i++) {
-        SetValueForRet(ZERO, heap);
-    }
-    result->push_back(heap);
-}
-
-void MemoryInfo::GetDma(const uint64_t& dmaValue, StringMatrix result)
-{
-    AddBlankLine(result);
-    vector<string> title;
-    title.push_back(MemoryFilter::GetInstance().DMA_TAG + ":");
-    result->push_back(title);
-
-    vector<string> dma;
-    string dmaTitle = MemoryFilter::GetInstance().DMA_OUT_LABEL + ":";
-    StringUtils::GetInstance().SetWidth(RAM_WIDTH_, BLANK_, false, dmaTitle);
-    dma.push_back(dmaTitle);
-    dma.push_back(to_string(dmaValue) + MemoryUtil::GetInstance().KB_UNIT_);
-    result->push_back(dma);
-}
-
-void MemoryInfo::GetHiaiServerIon(const int32_t &pid, StringMatrix result)
-{
-    if (GetProcName(pid) != "hiaiserver") {
-        return;
-    }
-    int realSize = 0;
-    DumpMeminfo info[256];
-    if (!QueryMemInfo(info, realSize)) {
-        DUMPER_HILOGE(MODULE_SERVICE, "QueryMemInfo failed");
-        return;
-    }
-    if (realSize > 0) {
-        AddBlankLine(result);
-        vector<string> vecIon;
-        vecIon.push_back("HIAIServer ION:\n");
-        for (int i = 0; i < realSize; i++) {
-            vecIon.push_back(GetProcName(info[i].pid) + "(" + to_string(info[i].pid) + "):" +
-                             to_string(info[i].size / BYTE_PER_KB) + " kB\n");
-        }
-        result->push_back(vecIon);
-    }
-}
-
 void MemoryInfo::GetAshmem(const int32_t &pid, StringMatrix result, bool showAshmem)
 {
     std::pair<int, std::vector<std::string>> ashmemInfo;
@@ -933,47 +621,22 @@ bool MemoryInfo::GetDmaBuf(const int32_t &pid, StringMatrix result, bool showDma
         DUMPER_HILOGD(MODULE_SERVICE, "showDmaBuf is false, skip GetDmaBuf");
         return false;
     }
-    std::vector<MemInfo::DmaNodeInfoWrapper> dmaBufInfos = MemInfo::GetDmaInfo(static_cast<int>(pid));
     const std::vector<std::string> showTitles = { "Process", "pid", "fd", "size_bytes", "ino", "exp_pid",
         "exp_task_comm", "buf_name", "exp_name", "buf_type", "leak_type" };
-    if (dmaBufInfos.empty()) {
-        DUMPER_HILOGW(MODULE_SERVICE, "GetDmaInfo return empty.");
-        return GetDmaBufByProc(pid, result, showTitles);
-    }
-    return DisposeDmaBufInfo(dmaBufInfos, showTitles, result);
+    return GetDmaBufByProc(pid, result, showTitles);
 }
-
 bool MemoryInfo::GetGpumem(const int32_t &pid, StringMatrix result, bool showGpumem)
 {
     if (!showGpumem) {
         DUMPER_HILOGD(MODULE_SERVICE, "showGpumem is false, skip GetGpumem");
         return false;
     }
-    std::string strs = CollectGpumem(pid, GPU_MEM_TYPE, GPU_INFO_TYPE, GPU_DFX_LIMIT);
-    if (strs.empty()) {
-        AddBlankLine(result);
-        std::vector<std::string> hint;
-        hint.push_back("Error [RUNTIME]: gpumem plugin is not loaded; --show-gpumem is unavailable.");
-        result->push_back(hint);
-        DUMPER_HILOGE(MODULE_SERVICE, "CollectGpumem returns empty, gpumem plugin not loaded");
-        return false;
-    }
     AddBlankLine(result);
-    vector<string> title;
-    title.push_back("GPU:");
-    result->push_back(title);
-    std::vector<std::string> lines;
-    std::stringstream ss(strs);
-    std::string line;
-    while (std::getline(ss, line)) {
-        lines.push_back(line);
-    }
-    for (const auto& line : lines) {
-        std::cout << line << std::endl;
-        vector<string> tempResult;
-        tempResult.push_back(line);
-        result->push_back(tempResult);
-    }
+    std::vector<std::string> hint;
+    hint.push_back("Error [RUNTIME]: gpumem plugin is not loaded; --show-gpumem is unavailable.");
+    result->push_back(hint);
+    DUMPER_HILOGE(MODULE_SERVICE, "CollectGpumem returns empty, gpumem plugin not loaded");
+    return false;
     return true;
 }
 
@@ -1006,63 +669,6 @@ bool MemoryInfo::GetDmaBufByProc(const int32_t &pid, StringMatrix result, const 
             }
             int width = std::min(columnWidths[headerMap[title]], DMABUF_MAX_WIDTH);
             oss << std::left << std::setw(width + LINE_SPACING) << value << END_BLANK;
-        }
-        vector<string> tempResult;
-        tempResult.push_back(oss.str());
-        result->push_back(tempResult);
-    }
-    return true;
-}
-
-bool MemoryInfo::DisposeDmaBufInfo(const std::vector<MemInfo::DmaNodeInfoWrapper>& dmaBufInfos,
-                                   const std::vector<std::string>& showTitles, StringMatrix result)
-{
-    std::vector<std::vector<std::string>> dmaBufResults;
-    dmaBufResults.reserve(dmaBufInfos.size() + 1);
-
-    std::vector<int> columnWidths(showTitles.size());
-    for (size_t i = 0; i < showTitles.size(); ++i) {
-        columnWidths[i] = static_cast<int>(showTitles[i].length());
-    }
-
-    auto safeStr = [](const std::string& s) { return s.empty() ? "NULL" : s; };
-
-    auto ConvertDmaBufInfoToStrings = [&](const MemInfo::DmaNodeInfoWrapper& info) {
-        return std::vector<std::string>{
-            safeStr(info.process),
-            std::to_string(info.pid),
-            std::to_string(info.fd),
-            std::to_string(info.size_bytes),
-            std::to_string(info.ino),
-            std::to_string(info.exp_pid),
-            safeStr(info.exp_task_comm),
-            safeStr(info.buf_name),
-            safeStr(info.exp_name),
-            safeStr(info.buf_type),
-            safeStr(info.leak_type)
-        };
-    };
-
-    dmaBufResults.push_back(showTitles);
-    for (const auto& dmaBufInfo : dmaBufInfos) {
-        auto tempResult = ConvertDmaBufInfoToStrings(dmaBufInfo);
-        for (size_t i = 0; i < tempResult.size(); ++i) {
-            columnWidths[i] = std::max(columnWidths[i], static_cast<int>(tempResult[i].length()));
-        }
-        dmaBufResults.push_back(std::move(tempResult));
-    }
-
-    return FillResultForDmaBuf(dmaBufResults, columnWidths, result);
-}
-
-bool MemoryInfo::FillResultForDmaBuf(const std::vector<std::vector<std::string>>& dmaBufResults,
-                                     const std::vector<int>& columnWidths, StringMatrix result)
-{
-    for (const auto& row : dmaBufResults) {
-        std::ostringstream oss;
-        for (size_t i = 0; i < row.size(); ++i) {
-            int width = std::min(columnWidths[i], DMABUF_MAX_WIDTH);
-            oss << std::left << std::setw(width + LINE_SPACING) << row[i] << END_BLANK;
         }
         vector<string> tempResult;
         tempResult.push_back(oss.str());
@@ -1197,7 +803,7 @@ int MemoryInfo::GetScoreAdj(const int32_t pid)
     }
     std::string content = "-1";
     OHOS::LoadStringFromFile(filePath, content);
-    int value = Memory::RECLAIM_PRIORITY_UNKNOWN;
+    int value = -1;
     if (!StrToInt(content.substr(0, content.size() - 1), value)) {
         DUMPER_HILOGE(MODULE_COMMON, "GetScoreAdj|StrToInt failed.");
         return -1;
@@ -1235,28 +841,6 @@ uint64_t MemoryInfo::GetVss(const int32_t &pid)
     return res;
 }
 
-bool MemoryInfo::GetGraphicsMemory(int32_t pid, MemInfoData::GraphicsMemory &graphicsMemory, GraphicType graphicType)
-{
-    DUMPER_HILOGD(MODULE_SERVICE, "GetGraphicUsage start, pid:%{public}d", pid);
-    std::shared_ptr<UCollectUtil::GraphicMemoryCollector> collector = UCollectUtil::GraphicMemoryCollector::Create();
-    CollectResult<int32_t> data;
-    data = collector->GetGraphicUsage(pid, graphicType, true);
-    if (data.retCode != UCollect::UcError::SUCCESS) {
-        DUMPER_HILOGE(MODULE_SERVICE, "collect progress GL or Graph error, ret:%{public}d", data.retCode);
-        return false;
-    }
-    DUMPER_HILOGD(MODULE_SERVICE, "GetGraphicUsage end, pid:%{public}d", pid);
-    if (graphicType == GraphicType::GL) {
-        graphicsMemory.gl = static_cast<uint64_t>(data.data);
-    } else if (graphicType == GraphicType::GRAPH) {
-        graphicsMemory.graph = static_cast<uint64_t>(data.data);
-    } else {
-        DUMPER_HILOGE(MODULE_SERVICE, "graphic type is not support.");
-        return false;
-    }
-    return true;
-}
-
 bool MemoryInfo::GetMemByProcessPid(const int32_t &pid, MemInfoData::MemUsage &usage)
 {
     bool success = false;
@@ -1278,31 +862,6 @@ bool MemoryInfo::GetMemByProcessPid(const int32_t &pid, MemInfoData::MemUsage &u
         success = true;
     }
 
-    MemInfoData::GraphicsMemory graphicsMemory;
-    MemoryUtil::GetInstance().InitGraphicsMemory(graphicsMemory);
-    if (GetGraphicsMemory(pid, graphicsMemory, GraphicType::GL)) {
-        usage.gl = graphicsMemory.gl;
-        if (!dumpPrune_) {
-            usage.uss = usage.uss + graphicsMemory.gl;
-            usage.rss = usage.rss + graphicsMemory.gl;
-        }
-        usage.pss = usage.pss + graphicsMemory.gl;
-    }
-    if (!dumpPrune_) {
-        if (GetGraphicsMemory(pid, graphicsMemory, GraphicType::GRAPH)) {
-            usage.graph = graphicsMemory.graph;
-            usage.dma = graphicsMemory.graph;
-            usage.uss = usage.uss + graphicsMemory.graph;
-            usage.pss = usage.pss + graphicsMemory.graph;
-            usage.rss = usage.rss + graphicsMemory.graph;
-            DUMPER_HILOGD(MODULE_SERVICE, "uss:%{public}d pss:%{public}d rss:%{public}d gl:%{public}d graph:%{public}d",
-                          static_cast<int>(usage.uss),
-                          static_cast<int>(usage.pss),
-                          static_cast<int>(usage.rss),
-                          static_cast<int>(graphicsMemory.gl),
-                          static_cast<int>(graphicsMemory.graph));
-        }
-    }
     return success;
 }
 

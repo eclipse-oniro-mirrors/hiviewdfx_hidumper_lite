@@ -12,25 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <algorithm>
 #include "util/config_utils.h"
-#include "directory_ex.h"
-#include "file_ex.h"
 #include "hilog_wrapper.h"
 #include "dump_common_utils.h"
-#include "dump_utils.h"
-#include "parameter.h"
-#include "common/dumper_constant.h"
-#include "parameters.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
 constexpr int ROOT_UID = 0;
 constexpr int BMS_UID = 1000;
 constexpr int APP_FIRST_UID = 10000;
-static const std::string SMAPS_PATH = "smaps/";
-static const std::string SMAPS_PATH_START = "/proc/";
-static const std::string SMAPS_PATH_END = "/smaps";
 } // namespace
 
 ConfigUtils::ConfigUtils(const std::shared_ptr<DumperParameter> &param) : dumperParam_(param)
@@ -55,12 +45,6 @@ DumpStatus ConfigUtils::GetDumperConfigs(const std::shared_ptr<DumperParameter> 
     }
     ConfigUtils configUtils(param);
     ret = configUtils.GetDumperConfigs();
-    if (ret == DumpStatus::DUMP_OK) {
-        auto dumpCfgs = param->GetExecutorConfigList();
-        for (size_t i = 0; i < dumpCfgs.size(); i++) {
-            dumpCfgs[i]->Dump();
-        }
-    }
 
     DUMPER_HILOGD(MODULE_COMMON, "leave|ret=%{public}d", ret);
     return ret;
@@ -78,63 +62,13 @@ DumpStatus ConfigUtils::GetDumperConfigs()
     currentPidInfo_.Reset();
     currentPidInfos_.clear();
 
-    HandleDumpSystem(dumpCfgs);
-    HandleDumpCpuFreq(dumpCfgs);  // cpuid
     HandleDumpCpuUsage(dumpCfgs); // pid
     HandleDumpMem(dumpCfgs);
-    HandleDumpJsHeapMem(dumpCfgs);
-    HandleDumpCjHeapMem(dumpCfgs);
-    HandleDumpHeapMem(dumpCfgs);
-    HandleDumpMemShowMaps(dumpCfgs);
-    HandleDumpLog(dumpCfgs);
-    HandleDumpStorage(dumpCfgs);
-    HandleDumpNet(dumpCfgs);
-    HandleDumpList(dumpCfgs);
-    HandleDumpAbility(dumpCfgs);
-    HandleDumpService(dumpCfgs);
     HandleDumpProcesses(dumpCfgs);
-    HandleDumpFaultLog(dumpCfgs);
-    HandleDumpAppendix(dumpCfgs);
-    HandleDumpIpcStat(dumpCfgs);
     DUMPER_HILOGD(MODULE_COMMON, "debug|dumpCfgs=%{public}zu", dumpCfgs.size());
     dumperParam_->SetExecutorConfigList(dumpCfgs);
     DUMPER_HILOGD(MODULE_COMMON, "leave|");
     return DumpStatus::DUMP_OK;
-}
-
-DumpStatus ConfigUtils::GetSectionNames(const std::string &name, std::vector<std::string> &nameList)
-{
-    std::vector<std::string> tmpUse;
-    GetGroupNames(name, tmpUse);
-    std::transform(tmpUse.begin(), tmpUse.end(), std::back_inserter(nameList),
-                   [](std::string &a) { return GetSectionName(a); });
-    DumpUtils::RemoveDuplicateString(nameList); // remove duplicate log names
-    return DumpStatus::DUMP_OK;
-}
-
-DumpStatus ConfigUtils::GetGroupNames(const std::string &name, std::vector<std::string> &nameList)
-{
-    bool check = !name.empty();
-    for (int i = 0; i < groupSum_; i++) {
-        if (groups_[i].name_.empty()) {
-            continue;
-        }
-        if (check && (groups_[i].name_.find(name) != 0)) {
-            continue;
-        }
-        nameList.push_back(groups_[i].name_);
-    }
-    return DumpStatus::DUMP_OK;
-}
-
-std::string ConfigUtils::GetSectionName(const std::string &name)
-{
-    std::string ret;
-    std::size_t pos = name.find_last_of(CONFIG_NAME_SPLIT);
-    if (pos != std::string::npos) {
-        ret = name.substr(pos + 1);
-    }
-    return ret;
 }
 
 bool ConfigUtils::MergePidInfos(std::vector<DumpCommonUtils::PidInfo> &pidInfos, int pid)
@@ -155,185 +89,6 @@ bool ConfigUtils::MergePidInfos(std::vector<DumpCommonUtils::PidInfo> &pidInfos,
     return true;
 }
 
-bool ConfigUtils::MergeDebugPidInfos(std::vector<DumpCommonUtils::PidInfo> &pidInfos, int pid)
-{
-    pidInfos.clear();
-    if (pid < 0) {
-        currentPidInfo_.pid_ = pid;
-        currentPidInfo_.uid_ = -1;
-        DumpCommonUtils::GetPidInfos(pidInfos_);
-        std::copy_if(pidInfos_.begin(), pidInfos_.end(), std::back_inserter(pidInfos),
-            [](auto &it) { return DumpUtils::CheckAppDebugVersion(it.pid_); });
-        if (pidInfos.size() == 0) {
-            DUMPER_HILOGE(MODULE_COMMON, "not find release version pid");
-            return false;
-        }
-        DUMPER_HILOGI(MODULE_COMMON, "info|pidInfos=%{public}zu", pidInfos.size());
-    } else {
-        if (DumpUtils::CheckAppDebugVersion(pid) && DumpCommonUtils::GetProcessInfo(pid, currentPidInfo_)) {
-            pidInfos.push_back(currentPidInfo_);
-        } else {
-            DUMPER_HILOGE(MODULE_COMMON, "pid:%{public}d is release version", pid);
-            return false;
-        }
-    }
-    return true;
-}
-
-bool ConfigUtils::HandleDumpLog(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpLog_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|log");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    auto args = OptionArgs::Create();
-    args->SetStrList(dumperOpts.logArgs_);
-    for (size_t i = 0; i < dumperOpts.logArgs_.size(); i++) {
-        std::string name = CONFIG_GROUP_LOG_ + dumperOpts.logArgs_[i];
-        GetConfig(name, dumpCfgs, args);
-    }
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpList(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpList_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|list");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    if (dumperOpts.isDumpSystemAbility_) {
-        DUMPER_HILOGD(MODULE_COMMON, "debug|list ability");
-        std::shared_ptr<OptionArgs> args;
-        GetConfig(CONFIG_DUMPER_LIST_SYSTEM_ABILITY, dumpCfgs, args);
-    }
-
-    if (dumperOpts.isDumpService_) {
-        DUMPER_HILOGD(MODULE_COMMON, "debug|list service");
-        std::shared_ptr<OptionArgs> args;
-        GetConfig(CONFIG_DUMPER_LIST_SERVICE, dumpCfgs, args);
-    }
-
-    if (dumperOpts.isDumpSystem_) {
-        DUMPER_HILOGD(MODULE_COMMON, "debug|list system");
-        std::shared_ptr<OptionArgs> args;
-        GetConfig(CONFIG_DUMPER_LIST_SYSTEM, dumpCfgs, args);
-    }
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpService(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (dumperOpts.isDumpList_ || (!dumperOpts.isDumpService_)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|service");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_GROUP_SERVICE, dumpCfgs, args);
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpAbility(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (dumperOpts.isDumpList_ || (!dumperOpts.isDumpSystemAbility_)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|ability");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    auto args = OptionArgs::Create();
-    args->SetNamesAndArgs(dumperOpts.abilitieNames_, dumperOpts.abilitieArgs_);
-    GetConfig(CONFIG_GROUP_ABILITY, dumpCfgs, args);
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpSystem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (dumperOpts.isDumpList_ || (!dumperOpts.isDumpSystem_)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|system");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    if (dumperOpts.systemArgs_.empty()) {
-        std::shared_ptr<OptionArgs> args;
-        GetConfig(CONFIG_GROUP_SYSTEM_BASE, dumpCfgs, args);
-        GetConfig(CONFIG_GROUP_SYSTEM_SYSTEM, dumpCfgs, args);
-        isDumpSystemSystem = true;
-        return true;
-    }
-
-    auto args = OptionArgs::Create();
-    args->SetStrList(dumperOpts.systemArgs_);
-    for (size_t i = 0; i < dumperOpts.systemArgs_.size(); i++) {
-        std::string name = CONFIG_GROUP_SYSTEM_ + dumperOpts.systemArgs_[i];
-        GetConfig(name, dumpCfgs, args);
-        if (name == CONFIG_GROUP_SYSTEM_SYSTEM) {
-            isDumpSystemSystem = true;
-        }
-    }
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpCpuFreq(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpCpuFreq_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d", isDumpSystemSystem);
-    if (isDumpSystemSystem) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|cpu freq");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_GROUP_CPU_FREQ, dumpCfgs, args);
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
 bool ConfigUtils::HandleDumpCpuUsage(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
 {
     const DumperOpts &dumperOpts = dumperParam_->GetOpts();
@@ -341,13 +96,7 @@ bool ConfigUtils::HandleDumpCpuUsage(std::vector<std::shared_ptr<DumpCfg>> &dump
         return false;
     }
 
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d, cpuUsagePid=%{public}d",
-        isDumpSystemSystem, dumperOpts.cpuUsagePid_);
-    if (isDumpSystemSystem && (dumperOpts.cpuUsagePid_ < 0)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|cpu usage");
+    DUMPER_HILOGD(MODULE_COMMON, "debug|cpu usage, cpuUsagePid=%{public}d", dumperOpts.cpuUsagePid_);
     currentPidInfo_.Reset();
     currentPidInfos_.clear();
     MergePidInfos(currentPidInfos_, dumperOpts.cpuUsagePid_);
@@ -367,80 +116,32 @@ bool ConfigUtils::HandleDumpMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
         return false;
     }
 
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d, memPid=%{public}d",
-        isDumpSystemSystem, dumperOpts.memPid_);
-    if (isDumpSystemSystem && (dumperOpts.memPid_ < 0)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|mem");
+    DUMPER_HILOGD(MODULE_COMMON, "debug|mem, memPid=%{public}d", dumperOpts.memPid_);
     HandleDumpMemCommon(dumperParam_, dumpCfgs);
     return true;
 }
 
-bool ConfigUtils::HandleDumpJsHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
+bool ConfigUtils::HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
 {
     const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpJsHeapMem_) {
+    if (!dumperOpts.isDumpProcesses_) {
         return false;
     }
-    DUMPER_HILOGD(MODULE_COMMON, "debug|memPid=%{public}d threadId=%{public}d",
-        dumperOpts.dumpJsHeapMemPid_, dumperOpts.threadId_);
-    if ((dumperOpts.dumpJsHeapMemPid_ <= 0) || (dumperOpts.threadId_ < 0)) {
-        return false;
-    }
+
+    DUMPER_HILOGD(MODULE_COMMON, "debug|processes");
+    currentPidInfo_.Reset();
+    currentPidInfos_.clear();
+    MergePidInfos(currentPidInfos_, dumperOpts.processPid_);
+
     std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_DUMPER_JSHEAP_MEMORY, dumpCfgs, args);
-    return true;
-}
-
-bool ConfigUtils::HandleDumpCjHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpCjHeapMem_) {
-        DUMPER_HILOGD(MODULE_COMMON, "Option isDumpCjHeapMem_ is false.");
-        return false;
-    }
-    DUMPER_HILOGD(MODULE_COMMON, "debug|memPid=%{public}d", dumperOpts.dumpCjHeapMemPid_);
-    if (dumperOpts.dumpCjHeapMemPid_ <= 0) {
-        return false;
-    }
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_DUMPER_CJHEAP_MEMORY, dumpCfgs, args);
-    return true;
-}
-
-bool ConfigUtils::HandleDumpHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpHeapMem_) {
-        DUMPER_HILOGD(MODULE_COMMON, "Option isDumpHeapMem_ is false.");
-        return false;
-    }
-    DUMPER_HILOGD(MODULE_COMMON, "debug|memPid=%{public}d", dumperOpts.dumpHeapMemPid_);
-    if (dumperOpts.dumpHeapMemPid_ <= 0 && dumperOpts.dumpHeapArgPid_ <= 0) {
-        return false;
-    }
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_DUMPER_HEAP_MEMORY, dumpCfgs, args);
-    return true;
-}
-
-bool ConfigUtils::HandleDumpMemShowMaps(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isShowSmaps_) {
-        return false;
+    if (dumperOpts.processPid_ < 0) {
+        GetConfig(CONFIG_GROUP_PROCESSES_ENG, dumpCfgs, args);
+    } else {
+        GetConfig(CONFIG_GROUP_PROCESSES_PID_ENG, dumpCfgs, args);
     }
 
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d, memPid=%{public}d",
-        isDumpSystemSystem, dumperOpts.memPid_);
-    if (isDumpSystemSystem && (dumperOpts.memPid_ < 0)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|mem-smaps");
-    HandleDumpMemCommon(dumperParam_, dumpCfgs);
+    currentPidInfos_.clear();
+    currentPidInfo_.Reset();
     return true;
 }
 
@@ -454,196 +155,6 @@ void ConfigUtils::HandleDumpMemCommon(std::shared_ptr<DumperParameter> dumpParam
     GetConfig(CONFIG_GROUP_MEMORY, dumpCfgs, args);
     currentPidInfos_.clear();
     currentPidInfo_.Reset();
-}
-
-bool ConfigUtils::HandleDumpStorage(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpStorage_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d, storagePid=%{public}d",
-        isDumpSystemSystem, dumperOpts.storagePid_);
-    if (isDumpSystemSystem && (dumperOpts.memPid_ < 0)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|storage");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-    MergePidInfos(currentPidInfos_, dumperOpts.storagePid_);
-
-    std::shared_ptr<OptionArgs> args;
-    if (dumperOpts.storagePid_ < 0) {
-        GetConfig(CONFIG_GROUP_STORAGE, dumpCfgs, args);
-    } else {
-        GetConfig(CONFIG_GROUP_STORAGE_IO, dumpCfgs, args);
-    }
-    
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpNet(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpNet_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|isDumpSystem=%{public}d, netPid=%{public}d",
-        isDumpSystemSystem, dumperOpts.netPid_);
-    if (isDumpSystemSystem && (dumperOpts.netPid_ < 0)) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|net");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-    MergePidInfos(currentPidInfos_, dumperOpts.netPid_);
-
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_GROUP_NET_TRAFFIC, dumpCfgs, args);
-    if (dumperOpts.netPid_ < 0) {
-        GetConfig(CONFIG_GROUP_NET, dumpCfgs, args);
-    }
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    std::string path = dumperOpts.path_;
-    if (!dumperOpts.isDumpProcesses_) {
-        return false;
-    }
-    std::shared_ptr<OptionArgs> args;
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|processes");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-    bool isUserMode = DumpUtils::IsUserMode();
-    if (isUserMode) {
-        if (!MergeDebugPidInfos(currentPidInfos_, dumperOpts.processPid_)) {
-            DUMPER_HILOGE(MODULE_COMMON, "dump process failed");
-            std::shared_ptr<RawParam> callback = dumperParam_->getClientCallback();
-            if (callback != nullptr) {
-                SaveStringToFd(callback->GetOutputFd(), "-p option only support debug application\n");
-            } else {
-                DUMPER_HILOGE(MODULE_COMMON, "client callback is nullptr");
-            }
-            return false;
-        }
-    } else {
-        MergePidInfos(currentPidInfos_, dumperOpts.processPid_);
-    }
-
-    if (dumperOpts.isDumpFd_ || dumperOpts.isDumpThread_) {
-        GetConfig(CONFIG_DUMPER_FD_THREAD, dumpCfgs, args);
-        return true;
-    }
-
-    if (isUserMode) { // release mode
-        if (dumperOpts.processPid_ < 0) {
-            GetConfig(CONFIG_GROUP_PROCESSES, dumpCfgs, args);
-        } else {
-            GetConfig(CONFIG_GROUP_PROCESSES_PID, dumpCfgs, args);
-        }
-    } else { // engine mode
-        if (dumperOpts.processPid_ < 0) {
-            GetConfig(CONFIG_GROUP_PROCESSES_ENG, dumpCfgs, args);
-        } else {
-            GetConfig(CONFIG_GROUP_PROCESSES_PID_ENG, dumpCfgs, args);
-        }
-
-        if (dumperOpts.IsDumpZip()) {
-            CopySmaps();
-        }
-    }
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpFaultLog(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isFaultLog_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|fault log");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    std::shared_ptr<OptionArgs> args;
-    if (dumperOpts.isEventList_ || dumperOpts.isEventDetail_) {
-        if (dumperOpts.isEventList_) {
-            DUMPER_HILOGD(MODULE_COMMON, "debug|event list");
-            GetConfig(CONFIG_DUMPER_EVENT_LIST, dumpCfgs, args);
-        } else if (dumperOpts.isEventDetail_) {
-            DUMPER_HILOGD(MODULE_COMMON, "debug|event detail");
-            GetConfig(CONFIG_DUMPER_EVENT_DETAIL, dumpCfgs, args);
-        }
-    } else {
-        GetConfig(CONFIG_GROUP_FAULT_LOG, dumpCfgs, args);
-    }
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpAppendix(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isAppendix_) {
-        return false;
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "debug|appendix");
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-
-    MergePidInfos(currentPidInfos_, -1);
-    std::shared_ptr<OptionArgs> args;
-
-    GetConfig(CONFIG_GROUP_LOG_KERNEL, dumpCfgs, args);
-    GetConfig(CONFIG_GROUP_LOG_INIT, dumpCfgs, args);
-    GetConfig(CONFIG_GROUP_LOG_HILOG, dumpCfgs, args);
-    int callingUid = dumperParam_->GetUid();
-    if (callingUid == ROOT_UID || callingUid == BMS_UID) {
-        GetConfig(CONFIG_GROUP_STACK, dumpCfgs, args);
-    } else {
-        DUMPER_HILOGE(MODULE_COMMON, "No permission to perform dump stack operation, uid=%{public}d", callingUid);
-    }
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
-}
-
-bool ConfigUtils::HandleDumpIpcStat(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
-{
-    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
-    if (!dumperOpts.isDumpIpc_) {
-        return false;
-    }
-
-    currentPidInfo_.Reset();
-    currentPidInfos_.clear();
-    MergePidInfos(currentPidInfos_, dumperOpts.ipcStatPid_);
-
-    std::shared_ptr<OptionArgs> args;
-    GetConfig(CONFIG_GROUP_IPC_STAT, dumpCfgs, args);
-
-    currentPidInfos_.clear();
-    currentPidInfo_.Reset();
-    return true;
 }
 
 int ConfigUtils::GetDumpLevelByPid(int uid, const DumpCommonUtils::PidInfo &pidInfo)
@@ -851,6 +362,16 @@ DumpStatus ConfigUtils::GetGroup(const std::string &name, std::vector<std::share
     return ret;
 }
 
+std::string ConfigUtils::GetSectionName(const std::string &name)
+{
+    std::string ret;
+    std::size_t pos = name.find_last_of(CONFIG_NAME_SPLIT);
+    if (pos != std::string::npos) {
+        ret = name.substr(pos + 1);
+    }
+    return ret;
+}
+
 void ConfigUtils::ConvertTreeToList(std::vector<std::shared_ptr<DumpCfg>> &tree,
                                     std::vector<std::shared_ptr<DumpCfg>> &list, int nest)
 {
@@ -895,41 +416,6 @@ void ConfigUtils::SetSection(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs, co
         }
         SetSection(dumpCfg->childs_, section, nest + 1);
     }
-}
-
-bool ConfigUtils::CopySmaps()
-{
-    DUMPER_HILOGD(MODULE_COMMON, "CopySmaps enter|");
-
-    std::shared_ptr<RawParam> callback = dumperParam_->getClientCallback();
-    if (callback == nullptr) {
-        DUMPER_HILOGE(MODULE_COMMON, "CopySmaps leave|callback");
-        return false;
-    }
-
-    callback->SetProgressEnabled(true);
-    std::string logFolder = callback->GetFolder();
-    int uid = dumperParam_->GetUid();
-    for (auto &pidInfo : currentPidInfos_) {
-        int newLevel = GetDumpLevelByPid(uid, pidInfo);
-        if (newLevel == DumperConstant::LEVEL_NONE) {
-            continue;
-        }
-        if (callback->IsCanceled()) {
-            DUMPER_HILOGD(MODULE_COMMON, "CopySmaps debug|Canceled");
-            break;
-        }
-        callback->UpdateProgress(0);
-        std::string pid = std::to_string(pidInfo.pid_);
-        std::string desfolder = logFolder + SMAPS_PATH + pidInfo.name_ + "-" + pid;
-        std::string src = SMAPS_PATH_START + pid + SMAPS_PATH_END;
-        std::string des = desfolder + SMAPS_PATH_END;
-        ForceCreateDirectory(IncludeTrailingPathDelimiter(desfolder));
-        DumpUtils::CopyFile(src, des);
-    }
-
-    DUMPER_HILOGD(MODULE_COMMON, "CopySmaps leave|true");
-    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

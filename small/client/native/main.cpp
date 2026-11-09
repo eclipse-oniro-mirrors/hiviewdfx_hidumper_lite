@@ -15,11 +15,13 @@
 #include <csignal>
 #include <unistd.h>
 #include <thread>
-#include "dump_client_main.h"
+#include "dump_manager_service.h"
 #include "hilog_wrapper.h"
-using OHOS::HiviewDFX::DumpClientMain;
 
-static void SigHandler(int sig)
+using OHOS::HiviewDFX::DumpManagerService;
+
+namespace {
+void SigHandler(int sig)
 {
     if (sig == SIGINT) {
         std::thread([&]() mutable {
@@ -29,15 +31,16 @@ static void SigHandler(int sig)
                 const_cast<char *>("SIGINT"),
             };
             int argc = sizeof(argv) / sizeof(argv[0]);
-            int ret = DumpClientMain::GetInstance().Main(argc, argv, STDOUT_FILENO);
+            int ret = DumpManagerService::GetInstance().Request(argc, argv, STDOUT_FILENO);
             _exit(ret);
         }).detach();
     }
 }
+} // namespace
 
 int main(int argc, char *argv[])
 {
     std::signal(SIGINT, SigHandler);
-    int ret = DumpClientMain::GetInstance().Main(argc, argv, STDOUT_FILENO);
+    int ret = DumpManagerService::GetInstance().Request(argc, argv, STDOUT_FILENO);
     _exit(ret);
 }

@@ -14,18 +14,16 @@
  */
 #ifndef HIDUMPER_SERVICES_DUMP_RAW_PARAM_H
 #define HIDUMPER_SERVICES_DUMP_RAW_PARAM_H
-#include <set>
+#include <memory>
+#include <mutex>
 #include <string_ex.h>
 #include <vector>
 #include "dump_controller.h"
-#include "idump_broker.h"
 namespace OHOS {
 namespace HiviewDFX {
-class DumpManagerService;
-class DumpManagerServiceClient;
 class RawParam {
 public:
-    RawParam(int calllingUid, int calllingPid, uint32_t reqId, std::vector<std::u16string>& args, int outfd);
+    RawParam(int calllingUid, int calllingPid, uint32_t reqId, int argc, char *const argv[], int outfd);
     ~RawParam();
     int GetArgc();
     char** GetArgv();
@@ -35,7 +33,6 @@ public:
     bool IsCanceled();
     bool IsFinished();
     bool HasError();
-    int GetCallerPpid();
 public:
     void Cancel();
     void UpdateStatus(uint32_t status, bool force = false);
@@ -45,24 +42,8 @@ public:
     void UpdateProgress(uint64_t progress);
     int& GetOutputFd();
     void CloseOutputFd();
-    bool Init(std::vector<std::u16string>& args);
+    bool Init(int argc, char *const argv[]);
     void Uninit();
-    void SetTitle(const std::string &path);
-    void SetFolder(const std::string &folder);
-    std::string GetFolder();
-private:
-    void Dump() const;
-    void SetCallerPpid(const std::string &ppid);
-    class ClientDeathRecipient : public IRemoteObject::DeathRecipient {
-    public:
-        ClientDeathRecipient(uint32_t reqId, bool& deathed);
-        virtual ~ClientDeathRecipient() = default;
-    public:
-        virtual void OnRemoteDied(const wptr<IRemoteObject>& remote);
-    private:
-        uint32_t reqId_;
-        bool& deathed_;
-    };
 private:
     struct ArgValue {
         char value[SINGLE_ARG_MAXLEN + 1] = {0};
@@ -70,7 +51,6 @@ private:
     std::mutex mutex_;
     int uid_ {-1};
     int pid_ {-1};
-    int callerPpid_ {-1};
     bool canceled_ {false};
     bool finished_ {false};
     bool hasError_ {false};
@@ -78,12 +58,9 @@ private:
     char* argHead_[ARG_MAX_COUNT + 1] = {nullptr};
     std::unique_ptr<ArgValue> argValues_[ARG_MAX_COUNT + 1] = {nullptr};
     int outfd_ {-1};
-    sptr<IRemoteObject::DeathRecipient> deathRecipient_;
     bool progressEnabled_ {false};
     uint32_t progressTick_ {0};
     uint64_t progress_ {0};
-    std::string path_;
-    std::string folder_;
     const uint64_t FINISH = 100;
 };
 } // namespace HiviewDFX

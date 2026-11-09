@@ -22,7 +22,6 @@
 #include <locale>
 #include <set>
 #include <queue>
-#include "ffrt.h"
 #include "hilog_wrapper.h"
 #include "task/base/task_register.h"
 #include "task/base/task_enable_config.h"
@@ -278,7 +277,6 @@ DumpStatus TaskControl::ExecuteTaskInner(DataInventory& dataInventory, TaskColle
     while (!runnableTasks.empty()) {
         std::vector<TaskStatistcs> stat(runnableTasks.size());
         SubmitRunnableTasks(runnableTasks, dataInventory, dumpContext, stat);
-        ffrt::wait();
         FillStatistcsDependence(taskCopy, stat);
         auto ret = GetTaskResult(std::move(stat), allLevelStats);
         if (!ret) {
@@ -310,15 +308,13 @@ void TaskControl::SubmitRunnableTasks(TaskCollection& tasks, DataInventory& data
 {
     size_t concurrentIndex = 0;
     for (auto& taskInfo : tasks) {
-        ffrt::submit([&taskInfo, &dataInventory, dumpContext, concurrentIndex, &stat, this]() {
-            auto startTime = std::chrono::steady_clock::now();
-            auto dumpStatus = ExecuteSingleTask(taskInfo.first, taskInfo.second, dataInventory, dumpContext);
-            
-            stat[concurrentIndex].dumpStatus = dumpStatus;
-            stat[concurrentIndex].mandatory = taskInfo.second.mandatory;
-            auto endTime = std::chrono::steady_clock::now();
-            UpdateTaskStatistics(stat[concurrentIndex], taskInfo.second, startTime, endTime);
-        });
+        auto startTime = std::chrono::steady_clock::now();
+        auto dumpStatus = ExecuteSingleTask(taskInfo.first, taskInfo.second, dataInventory, dumpContext);
+
+        stat[concurrentIndex].dumpStatus = dumpStatus;
+        stat[concurrentIndex].mandatory = taskInfo.second.mandatory;
+        auto endTime = std::chrono::steady_clock::now();
+        UpdateTaskStatistics(stat[concurrentIndex], taskInfo.second, startTime, endTime);
         ++concurrentIndex;
     }
 }

@@ -30,6 +30,7 @@ public:
 
 private:
     DumpCpuData GetDumpCpuData();
+    bool DumpCpuUsage(int pid);
 
     StringMatrix dumpCPUDatas_;
     bool isDumpCpuUsage_ = false;

@@ -14,24 +14,19 @@
  */
 
 #include "executor/fd_output.h"
+#include <sys/stat.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include <cstring>
 #include "common/dumper_constant.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-const mode_t FDOutput::OPEN_ARGV = 0664;
-
-FDOutput::FDOutput() : fd_(-1)
+FDOutput::FDOutput()
 {
 }
 
 FDOutput::~FDOutput()
 {
-    if (fd_ >= 0) {
-        fdsan_close_with_tag(fd_, FDTAG);
-    }
-    fd_ = -1;
 }
 
 DumpStatus FDOutput::PreExecute(const std::shared_ptr<DumperParameter>& parameter,
@@ -44,14 +39,6 @@ DumpStatus FDOutput::PreExecute(const std::shared_ptr<DumperParameter>& paramete
         return DumpStatus::DUMP_FAIL;
     }
     ptrReqCtl_ = parameter->getClientCallback();
-    path_ = parameter->GetOutputFilePath();
-    if ((fd_ < 0) && (!path_.empty())) {
-        fd_ = open(path_.c_str(), O_WRONLY | O_CREAT | O_APPEND, OPEN_ARGV);
-        if (fd_ < 0) {
-            return DumpStatus::DUMP_FAIL;
-        }
-        fdsan_exchange_owner_tag(fd_, 0, FDTAG);
-    }
     return DumpStatus::DUMP_OK;
 }
 
@@ -96,13 +83,11 @@ void FDOutput::WriteToFd(std::string &str)
         if (write(rawParamFd, str.c_str(), strlen(str.c_str())) == -1) {
             DUMPER_HILOGE(MODULE_COMMON, "write to rawParamFd failed, errno: %{public}d", errno);
         }
-        if (fsync(rawParamFd) == -1) {
-            DUMPER_HILOGD(MODULE_COMMON, "fsync to rawParamFd failed, errno: %{public}d", errno);
-        }
-    }
-    if (fd_ > -1) {
-        if (dprintf(fd_, "%s", str.c_str()) == -1) {
-            DUMPER_HILOGE(MODULE_COMMON, "dprintf to fd_ failed, errno: %{public}d", errno);
+        struct stat fdStat = {0};
+        if (fstat(rawParamFd, &fdStat) == 0 && S_ISREG(fdStat.st_mode)) {
+            if (fsync(rawParamFd) == -1) {
+                DUMPER_HILOGD(MODULE_COMMON, "fsync to rawParamFd failed, errno: %{public}d", errno);
+            }
         }
     }
 }

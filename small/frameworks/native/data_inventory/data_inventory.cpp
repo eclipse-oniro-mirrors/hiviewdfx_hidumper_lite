@@ -15,6 +15,7 @@
 
 #include "data_inventory.h"
 #include <algorithm>
+#include <mutex>
 
 namespace OHOS {
 namespace HiviewDFX {

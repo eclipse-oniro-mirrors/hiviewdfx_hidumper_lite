@@ -19,7 +19,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-const std::string CMD_PREFIX = "/system/bin/";
+const std::string CMD_PREFIX = "/bin/";
 CMDDumper::CMDDumper() : fp_(nullptr)
 {
 }

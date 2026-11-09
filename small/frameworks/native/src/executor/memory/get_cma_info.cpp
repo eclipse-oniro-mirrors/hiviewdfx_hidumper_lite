@@ -17,7 +17,6 @@
 
 #include <cstdlib>
 
-#include "executor/cmd_dumper.h"
 #include "executor/memory/memory_util.h"
 #include "util/string_utils.h"
 #include "hilog_wrapper.h"

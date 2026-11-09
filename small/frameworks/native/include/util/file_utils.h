@@ -17,6 +17,7 @@
 #include <string>
 #include "dump_utils.h"
 #include "singleton.h"
+#include <functional>
 #include "string_utils.h"
 namespace OHOS {
 namespace HiviewDFX {

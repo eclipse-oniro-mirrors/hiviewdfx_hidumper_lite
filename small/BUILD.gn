@@ -14,21 +14,10 @@
 import("//build/ohos.gni")
 import("hidumper.gni")
 
-group("bin") {
-  deps = [ "frameworks/native:hidumper" ]
-}
-group("service") {
+group("hidumper_small") {
   deps = [
-    "frameworks/native:hidumperclient",
-    "interfaces/innerkits:lib_dump_usage",
-    "services:hidumper_service.rc",
-    "services:hidumpermemory",
-    "services:hidumperservice",
+    "frameworks/native:hidumper",
+    "services:task_enable_config",
   ]
-  if (!hidumper_hiviewdfx_plugin_enable) {
-    deps += [ "sa_profile:hidumper_service_sa_profile" ]
-  }
-  if (build_variant == "root") {
-    deps += [ "services:infos_config" ]
-  }
 }
+

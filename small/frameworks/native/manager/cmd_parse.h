@@ -34,24 +34,18 @@ public:
 private:
     DumpStatus CheckArgs(int argc, char* argv[]);
     DumpStatus CmdParseHelper(int argc, char *argv[], DumpContext& dumpContext);
-    DumpStatus ParseLongCmdOption(int argc, DumpContext& dumpContext, const struct option longOptions[],
-                                  const int &optionIndex, char *argv[]);
-    bool ParseSubLongCmdOption(int argc, DumpContext& dumpContext, const struct option longOptions[],
-                               const int &optionIndex, char *argv[]);
+    DumpStatus ParseLongCmdOption(DumpContext& dumpContext, const struct option longOptions[],
+                                  const int &optionIndex);
+    bool ParseSubLongCmdOption(DumpContext& dumpContext, const struct option longOptions[],
+                               const int &optionIndex);
     void CheckIncorrectCmdOption(const char *optStr, char *argv[], DumpContext& dumpContext);
     DumpStatus ParseShortCmdOption(int c, DumpContext& dumpContext, int argc, char *argv[]);
     bool IsShortOptionReqArg(const char *optStr, DumpContext& dumpContext);
     DumpStatus SetCmdParameter(int argc, char *argv[], DumpContext& dumpContext);
     DumpStatus SetCmdIntegerParameter(const std::string &str, int &value, DumpContext& dumpContext);
-    DumpStatus SetMemJsheapParam(DumpContext& dumpContext);
-    DumpStatus SetRawParam(DumpContext& dumpContext);
-    bool SetIpcStatParam(DumpContext& dumpContext, const std::string& param);
     std::string RemoveCharacterFromStr(const std::string &str, const char character);
-    DumpStatus ParseCmdOptionForA(DumpContext& dumpContext, char *argv[]);
     DumpStatus CheckProcessAlive(DumpContext& dumpContext);
-    bool IsSADumperOption(char *argv[]);
     DumpStatus VerifyOptions(const DumpContext& dumpContext);
-    DumpStatus SetHeapCombineParam(DumpContext& dumpContext);
 };
 }
 }

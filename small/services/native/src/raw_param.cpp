@@ -14,12 +14,9 @@
  */
 #include "raw_param.h"
 #include <cinttypes>
-#include <thread>
 #include <securec.h>
-#include <string_ex.h>
 #include <unistd.h>
 #include "hilog_wrapper.h"
-#include "dump_manager_service.h"
 #include "common/dumper_constant.h"
 
 namespace OHOS {
@@ -31,11 +28,13 @@ static const char PROGRESS_STYLE = '=';
 static const char PROGRESS_TICK[] = {'-', '\\', '|', '/'};
 } // namespace
 
-RawParam::RawParam(int calllingUid, int calllingPid, uint32_t reqId, std::vector<std::u16string> &args, int outfd)
+RawParam::RawParam(int calllingUid, int calllingPid, uint32_t reqId, int argc, char *const argv[], int outfd)
     : uid_(calllingUid), pid_(calllingPid), canceled_(false), finished_(false), reqId_(reqId), outfd_(outfd)
 {
     DUMPER_HILOGD(MODULE_SERVICE, "create|pid=%{public}d, reqId=%{public}u", pid_, reqId_);
-    Init(args);
+    if (!Init(argc, argv)) {
+        DUMPER_HILOGE(MODULE_SERVICE, "init args failed, argc=%{public}d", argc);
+    }
 }
 
 RawParam::~RawParam()
@@ -44,20 +43,19 @@ RawParam::~RawParam()
     Uninit();
 }
 
-bool RawParam::Init(std::vector<std::u16string> &args)
+bool RawParam::Init(int argc, char *const argv[])
 {
     DUMPER_HILOGD(MODULE_SERVICE, "enter|");
-    if (deathRecipient_ == nullptr) {
-        deathRecipient_ = sptr<IRemoteObject::DeathRecipient>(new ClientDeathRecipient(reqId_, canceled_));
+    if (argc < ARG_MIN_COUNT || argc > ARG_MAX_COUNT || argv == nullptr) {
+        DUMPER_HILOGE(MODULE_SERVICE, "error|invalid args, argc=%{public}d", argc);
+        return false;
     }
-    DUMPER_HILOGD(MODULE_SERVICE, "debug|argc=%{public}zu", args.size());
-    if (args.size() >= ARG_MIN_COUNT) {
-        SetCallerPpid(Str16ToStr8(args[args.size() - 1]));
-        args.pop_back();
-    }
-    for (size_t i = 0; i < args.size() && i <= ARG_MAX_COUNT; i++) {
+    for (int i = 0; i < argc; i++) {
+        if (argv[i] == nullptr) {
+            return false;
+        }
         argValues_[i] = std::make_unique<ArgValue>();
-        if (sprintf_s(argValues_[i]->value, SINGLE_ARG_MAXLEN, "%s", Str16ToStr8(args[i]).c_str()) < 0) {
+        if (sprintf_s(argValues_[i]->value, SINGLE_ARG_MAXLEN, "%s", argv[i]) < 0) {
             return false;
         }
         argHead_[i] = argValues_[i]->value;
@@ -81,12 +79,8 @@ int &RawParam::GetOutputFd()
 void RawParam::CloseOutputFd()
 {
     DUMPER_HILOGD(MODULE_SERVICE, "enter|outfd=%{public}d", outfd_);
-    if (outfd_ > -1) {
-        DUMPER_HILOGD(MODULE_SERVICE, "debug|outfd=%{public}d", outfd_);
-        fdsan_close_with_tag(outfd_, FDTAG);
-    }
     outfd_ = -1;
-    DUMPER_HILOGD(MODULE_SERVICE, "leave|outfd=%{public}d", outfd_);
+    DUMPER_HILOGD(MODULE_SERVICE, "leave|");
 }
 
 int RawParam::GetArgc()
@@ -142,6 +136,13 @@ void RawParam::Cancel()
     DUMPER_HILOGD(MODULE_SERVICE, "debug|reqId=%{public}u", reqId_);
 }
 
+void RawParam::UpdateStatus(uint32_t status, bool force)
+{
+    (void)status;
+    (void)force;
+    finished_ = true;
+}
+
 void RawParam::SetProgressEnabled(bool enable)
 {
     progressEnabled_ = enable;
@@ -150,31 +151,6 @@ void RawParam::SetProgressEnabled(bool enable)
 bool RawParam::IsProgressEnabled() const
 {
     return progressEnabled_;
-}
-
-void RawParam::SetTitle(const std::string &path)
-{
-    path_ = path;
-}
-
-void RawParam::SetFolder(const std::string &folder)
-{
-    folder_ = folder;
-}
-
-std::string RawParam::GetFolder()
-{
-    return folder_;
-}
-
-void RawParam::SetCallerPpid(const std::string &ppid)
-{
-    StrToInt(ppid, callerPpid_);
-}
-
-int RawParam::GetCallerPpid()
-{
-    return callerPpid_;
 }
 
 void RawParam::UpdateProgress(uint32_t total, uint32_t current)
@@ -202,34 +178,6 @@ void RawParam::UpdateProgress(uint64_t progress)
     } else {
         dprintf(outfd_, "\033[?25l\r%2" PRIu64 "%%,[%c]\033[?25h", progress_, PROGRESS_TICK[progressTick_]);
     }
-    if (progress_ == FINISH) {
-        dprintf(outfd_, "%s\n", path_.c_str());
-    }
-}
-
-RawParam::ClientDeathRecipient::ClientDeathRecipient(uint32_t reqId, bool &deathed) : reqId_(reqId), deathed_(deathed)
-{}
-
-void RawParam::ClientDeathRecipient::OnRemoteDied(const wptr<IRemoteObject> &remote)
-{
-    if (remote == nullptr || remote.promote() == nullptr) {
-        return;
-    }
-    auto dumpManagerService = DumpDelayedSpSingleton<DumpManagerService>::GetInstance();
-    if (dumpManagerService == nullptr) {
-        return;
-    }
-    DUMPER_HILOGD(MODULE_SERVICE, "enter|reqId=%{public}d", reqId_);
-    deathed_ = true;
-    DUMPER_HILOGD(MODULE_SERVICE, "leave|reqId=%{public}d", reqId_);
-}
-
-void RawParam::Dump() const
-{
-    DUMPER_HILOGD(MODULE_SERVICE, "enter|");
-    DUMPER_HILOGD(MODULE_SERVICE, "debug|uid=%{public}d, pid=%{public}d", uid_, pid_);
-    DUMPER_HILOGD(MODULE_SERVICE, "debug|reqId=%{public}u", reqId_);
-    DUMPER_HILOGD(MODULE_SERVICE, "leave|");
 }
 } // namespace HiviewDFX
 } // namespace OHOS

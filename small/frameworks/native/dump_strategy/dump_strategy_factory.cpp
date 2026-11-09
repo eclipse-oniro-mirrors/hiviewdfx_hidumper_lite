@@ -15,25 +15,14 @@
 
 #include "dump_strategy_factory.h"
 #include "hilog_wrapper.h"
-#include "system_info_dump_strategy.h"
 #include "cpu_dump_strategy.h"
 #include "mem_dump_strategy.h"
-#include "storage_dump_strategy.h"
-#include "net_dump_strategy.h"
-#include "system_ability_dump_strategy.h"
 #include "process_info_dump_strategy.h"
-#include "log_dump_strategy.h"
-#include "stack_dump_strategy.h"
-#include "ipc_stat_dump_strategy.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
 std::vector<StrategyConfig> DumpStrategyFactory::strategyConfigs_ = {
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpSystem; },
-        []() { return std::make_unique<SystemInfoDumpStrategy>(); }
-    },
     {
         [](const std::shared_ptr<DumperOptions>& opts) {
             return opts->isDumpCpuFreq || opts->isDumpCpuUsage;
@@ -45,32 +34,8 @@ std::vector<StrategyConfig> DumpStrategyFactory::strategyConfigs_ = {
         []() { return std::make_unique<MemDumpStrategy>(); }
     },
     {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpStorage; },
-        []() { return std::make_unique<StorageDumpStrategy>(); }
-    },
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpNet; },
-        []() { return std::make_unique<NetDumpStrategy>(); }
-    },
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpSystemAbility; },
-        []() { return std::make_unique<SystemAbilityDumpStrategy>(); }
-    },
-    {
         [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpProcesses; },
         []() { return std::make_unique<ProcessInfoDumpStrategy>(); }
-    },
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpLog; },
-        []() { return std::make_unique<LogDumpStrategy>(); }
-    },
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isAppendix; },
-        []() { return std::make_unique<StackDumpStrategy>(); }
-    },
-    {
-        [](const std::shared_ptr<DumperOptions>& opts) { return opts->isDumpIpcStat; },
-        []() { return std::make_unique<IpcStatDumpStrategy>(); }
     }
 };
 
@@ -115,7 +80,7 @@ DumpStatus DumpStrategyFactory::CollectRootTasks(const DumpContext& context, std
         DUMPER_HILOGE(MODULE_COMMON, "Failed to get options from context");
         return DumpStatus::DUMP_FAIL;
     }
-    
+
     std::vector<std::unique_ptr<DumpStrategy>> strategies;
     CreateStrategies(opts, strategies);
     return ExecuteStrategies(strategies, context, rootTasks);

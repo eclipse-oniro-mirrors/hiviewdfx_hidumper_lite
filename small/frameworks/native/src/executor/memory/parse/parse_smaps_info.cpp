@@ -111,92 +111,15 @@ bool ParseSmapsInfo::GetInfo(const MemoryFilter::MemoryType &memType, const int 
     return ret;
 }
 
-void ParseSmapsInfo::SetMemoryData(MemoryData &memoryData, const MemoryItem &memoryItem,
-    const std::string& memoryClassStr)
-{
-    memoryData.name = memoryItem.name == "" ? "[anon]" : memoryItem.name;
-    memoryData.memoryClass = memoryClassStr;
-    memoryData.counts = 1;
-    memoryData.size = memoryItem.size;
-    memoryData.rss = memoryItem.rss;
-    memoryData.pss = memoryItem.pss;
-    memoryData.swapPss = memoryItem.swapPss;
-    memoryData.swap = memoryItem.swap;
-    memoryData.sharedDirty = memoryItem.sharedDirty;
-    memoryData.privateDirty = memoryItem.privateDirty;
-    memoryData.sharedClean = memoryItem.sharedClean;
-    memoryData.privateClean = memoryItem.privateClean;
-    memoryData.iNode = memoryItem.iNode;
-}
-
-void ParseSmapsInfo::UpdateCountSameNameMemMap(const std::vector<MemoryItem>& memoryItems,
-    const std::string& memoryClassStr, std::map<std::string, MemoryData>& countSameNameMemMap)
-{
-    for (const auto& memoryItem : memoryItems) {
-        if (countSameNameMemMap.find(memoryItem.name) == countSameNameMemMap.end()) {
-            MemoryData memoryData;
-            SetMemoryData(memoryData, memoryItem, memoryClassStr);
-            countSameNameMemMap[memoryItem.name] = memoryData;
-        } else {
-            MemoryData& data = countSameNameMemMap[memoryItem.name];
-            data.size += memoryItem.size;
-            data.rss += memoryItem.rss;
-            data.pss += memoryItem.pss;
-            data.swapPss += memoryItem.swapPss;
-            data.swap += memoryItem.swap;
-            data.sharedDirty += memoryItem.sharedDirty;
-            data.privateDirty += memoryItem.privateDirty;
-            data.sharedClean += memoryItem.sharedClean;
-            data.privateClean += memoryItem.privateClean;
-            data.counts++;
-        }
-    }
-}
-
-void ParseSmapsInfo::UpdateShowAddressMemInfoVec(const std::vector<MemoryItem>& memoryItems,
-    const std::string& memoryClassStr, std::vector<MemoryData>& showAddressMemInfoVec)
-{
-    for (const auto& memoryItem : memoryItems) {
-        MemoryData memoryData;
-        memoryData.permission = memoryItem.permission;
-        memoryData.startAddr = memoryItem.startAddr;
-        memoryData.endAddr = memoryItem.endAddr;
-        SetMemoryData(memoryData, memoryItem, memoryClassStr);
-        showAddressMemInfoVec.push_back(memoryData);
-    }
-}
-
 bool ParseSmapsInfo::GetSmapsData(const int &pid, bool isShowSmapsAddress,
     std::map<std::string, MemoryData>& countSameNameMemMap, std::vector<MemoryData>& showAddressMemInfoVec)
 {
-    DUMPER_HILOGI(MODULE_SERVICE, "collect memory begin, pid:%{public}d", pid);
-    std::shared_ptr<UCollectUtil::MemoryCollector> collector = UCollectUtil::MemoryCollector::Create();
-    auto collectRet = collector->CollectProcessMemoryDetail(pid, GraphicMemOption::NONE);
-    if (collectRet.retCode != UCollect::UcError::SUCCESS) {
-        DUMPER_HILOGE(MODULE_SERVICE, "collect process memory error, ret:%{public}d", collectRet.retCode);
-        return false;
-    }
-    DUMPER_HILOGI(MODULE_SERVICE, "collect memory end, pid:%{public}d", pid);
-    vector<MemoryDetail> memoryDetails = collectRet.data.details;
-    for (const auto& memoryDetail : memoryDetails) {
-        MemoryClass memoryClass = memoryDetail.memoryClass;
-        if (static_cast<int>(memoryClass) < 0 ||
-            static_cast<size_t>(memoryClass) > MEMORY_CLASS_VEC.size()) {
-            DUMPER_HILOGE(MODULE_SERVICE, "memoryClass:%{public}d is not exist", memoryClass);
-            continue;
-        }
-        string memoryClassStr = MEMORY_CLASS_VEC[static_cast<int>(memoryClass)];
-        if (memoryClassStr == "graph") {
-            continue;
-        }
-        vector<MemoryItem> memoryItems = memoryDetail.items;
-        if (isShowSmapsAddress) {
-            UpdateShowAddressMemInfoVec(memoryItems, memoryClassStr, showAddressMemInfoVec);
-        } else {
-            UpdateCountSameNameMemMap(memoryItems, memoryClassStr, countSameNameMemMap);
-        }
-    }
-    return true;
+    (void)pid;
+    (void)isShowSmapsAddress;
+    (void)countSameNameMemMap;
+    (void)showAddressMemInfoVec;
+    DUMPER_HILOGW(MODULE_SERVICE, "smaps detail is not supported on lite system");
+    return false;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

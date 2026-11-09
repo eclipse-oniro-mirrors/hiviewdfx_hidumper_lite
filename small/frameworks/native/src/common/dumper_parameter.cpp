@@ -49,16 +49,6 @@ const DumperOpts &DumperParameter::GetOpts() const
     return opts_;
 }
 
-void DumperParameter::SetOutputFilePath(std::string &path)
-{
-    opts_.path_ = path;
-}
-
-std::string &DumperParameter::GetOutputFilePath()
-{
-    return opts_.path_;
-}
-
 void DumperParameter::SetExecutorConfigList(std::vector<std::shared_ptr<DumpCfg>> &list)
 {
     list_ = list;

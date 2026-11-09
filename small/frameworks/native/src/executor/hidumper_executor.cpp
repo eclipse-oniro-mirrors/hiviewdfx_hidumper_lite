@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 #include "executor/hidumper_executor.h"
-#include "datetime_ex.h"
 namespace OHOS {
 namespace HiviewDFX {
 const std::string HidumperExecutor::TIME_OUT_STR = "time out";

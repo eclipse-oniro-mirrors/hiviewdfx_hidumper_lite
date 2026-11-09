@@ -179,56 +179,23 @@ std::string DumpCfg::ToDumperStr(int type)
         return "cpu_dumper";
     } else if (type == DumperConstant::FILE_DUMPER) {
         return "file_dumper";
-    } else if (type == DumperConstant::ENV_PARAM_DUMPER) {
-        return "env_dumper";
     } else if (type == DumperConstant::CMD_DUMPER) {
         return "cmd_dumper";
-    } else if (type == DumperConstant::PROPERTIES_DUMPER) {
-        return "prop_dumper";
-    } else if (type == DumperConstant::API_DUMPER) {
-        return "api_dumper";
-    } else if (type == DumperConstant::LIST_DUMPER) {
-        return "list_dumper";
-    } else if (type == DumperConstant::VERSION_DUMPER) {
-        return "ver_dumper";
-    } else if (type == DumperConstant::SA_DUMPER) {
-        return "sa_dumper";
     } else if (type == DumperConstant::MEMORY_DUMPER) {
         return "mem_dumper";
-    } else if (type == DumperConstant::JSHEAP_MEMORY_DUMPER) {
-        return "dumper_jsheap_memory";
-    } else if (type == DumperConstant::CJHEAP_MEMORY_DUMPER) {
-        return "dumper_cjheap_memory";
-    } else if (type == DumperConstant::STACK_DUMPER) {
-        return "stack_dumper";
-    } else if (type == DumperConstant::TRAFFIC_DUMPER) {
-        return "traffic_dumper";
-    } else if (type == DumperConstant::IPC_STAT_DUMPER) {
-        return "ipc_stat_dumper";
     }
     return "unknown_dumper";
 }
 
 std::string DumpCfg::ToFilterStr(int type)
 {
-    if (type == DumperConstant::COLUMN_ROWS_FILTER) {
-        return "col_row_filter";
-    } else if (type == DumperConstant::FILE_FORMAT_DUMP_FILTER) {
-        return "file_format_dump_filter";
-    }
     return "unknown_filter";
 }
 
 std::string DumpCfg::ToOutputStr(int type)
 {
-    if (type == DumperConstant::STD_OUTPUT) {
-        return "std_output";
-    } else if (type == DumperConstant::FILE_OUTPUT) {
-        return "file_output";
-    } else if (type == DumperConstant::FD_OUTPUT) {
+    if (type == DumperConstant::FD_OUTPUT) {
         return "fd_output";
-    } else if (type == DumperConstant::ZIP_OUTPUT) {
-        return "zip_output";
     }
     return "unknown_output";
 }

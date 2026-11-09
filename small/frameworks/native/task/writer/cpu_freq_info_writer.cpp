@@ -24,10 +24,8 @@ namespace HiviewDFX {
 
 DumpStatus CpuFreqInfoWriter::TaskEntry(DataInventory& dataInventory, const DumpContext& dumpContext)
 {
-    if (!dumpContext.GetDumperOpts()->isDumpSystem) {
-        const std::string title = "-------------------------------[cpufreq]-------------------------------";
-        WriteTitle(title, dumpContext.GetOutputFd());
-    }
+    const std::string title = "-------------------------------[cpufreq]-------------------------------";
+    WriteTitle(title, dumpContext.GetOutputFd());
 
     auto data = dataInventory.GetPtr<std::vector<CpuFreqInfo>>(DataId::CPU_FREQ_INFO);
     if (!data || data->empty()) {

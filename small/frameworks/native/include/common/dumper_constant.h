@@ -29,33 +29,13 @@ enum DumperConstant {
     DUMPER_BEGIN, // dumper begin
     CPU_DUMPER,
     FILE_DUMPER,
-    ENV_PARAM_DUMPER,
     CMD_DUMPER,
-    PROPERTIES_DUMPER,
-    API_DUMPER,
-    LIST_DUMPER,
-    VERSION_DUMPER,
-    SA_DUMPER,
     MEMORY_DUMPER,
-    JSHEAP_MEMORY_DUMPER,
-    CJHEAP_MEMORY_DUMPER,
-    HEAP_MEMORY_DUMPER,
-    EVENT_DETAIL_DUMPER,
-    EVENT_LIST_DUMPER,
-    FD_THREAD_DUMPER,
-    STACK_DUMPER,
-    TRAFFIC_DUMPER,
-    IPC_STAT_DUMPER,
     DUMPER_END,   // dumper end
     FILTER_BEGIN, // filter begin
-    COLUMN_ROWS_FILTER,
-    FILE_FORMAT_DUMP_FILTER,
     FILTER_END,   // filter end
     OUTPUT_BEGIN, // output begin
-    STD_OUTPUT,
-    FILE_OUTPUT,
     FD_OUTPUT,
-    ZIP_OUTPUT,
     OUTPUT_END,  // output end
     LEVEL_BEGIN, // level begin
     LEVEL_NONE,
@@ -70,26 +50,6 @@ enum DumperConstant {
     LOOP,
 };
 
-struct DumperSysEventParams {
-    int32_t errorCode;
-    int32_t callerPpid;
-    std::string opt;
-    std::string subOpt;
-    std::string target;
-    std::string arguments;
-    std::string errorMsg;
-};
-
-
-inline const std::string LOG_DEFAULT = "log.txt";
-inline const std::string ZIP_FILEEXT = "zip";
-inline const std::string ZIP_FOLDER = "/data/log/hidumper/";
-inline const std::string HISYSEVENT_TMP_FILE = "/data/log/hidumper/hisysevent.tmp";
-inline const int64_t ZIP_MAX_SIZE = 100 * 1024 * 1024;
-inline const int64_t ZIP_TARGET_SIZE = 80 * 1024 * 1024;
-
-inline const std::string RELEASE_MODE = "Release";
-inline constexpr const char* KILL_ID_KEY = "KILL_ID";
 const uint64_t FDTAG = (((uint64_t)0xD002D20 << 32) | 0x01);
 } // namespace HiviewDFX
 } // namespace OHOS

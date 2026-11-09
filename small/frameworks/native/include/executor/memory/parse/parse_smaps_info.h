@@ -19,7 +19,6 @@
 #include <vector>
 #include "executor/memory/memory_filter.h"
 #include "executor/memory/parse/meminfo_data.h"
-#include "memory_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 struct MemoryData {
@@ -54,22 +53,12 @@ public:
         std::map<std::string, MemoryData>& countSameNameMemMap, std::vector<MemoryData>& showAddressMemInfoVec);
 
 private:
-    const std::vector<std::string> MEMORY_CLASS_VEC = {
-        "graph", "ark ts heap", "arkts-static heap", ".db", "dev", "dmabuf", "guard", ".hap",
-        "native heap", ".so", "stack", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap", "kotlin heap",
-        "rn-hermes heap", "dart heap", "other"
-    };
     std::string memGroup_ = "";
     std::string nativeMemGroup_ = "";
 
     bool GetValue(const MemoryFilter::MemoryType &memType, const std::string &str, std::string &type, uint64_t &value);
     bool GetHasPidValue(const std::string &str, std::string &type, uint64_t &value);
     bool GetNoPidValue(const std::string &str, std::string &type, uint64_t &value);
-    void UpdateShowAddressMemInfoVec(const std::vector<MemoryItem>& memoryItems, const std::string& memoryClassStr,
-        std::vector<MemoryData>& showAddressMemInfoVec);
-    void UpdateCountSameNameMemMap(const std::vector<MemoryItem>& memoryItems, const std::string& memoryClassStr,
-        std::map<std::string, MemoryData>& countSameNameMemMap);
-    void SetMemoryData(MemoryData &memoryData, const MemoryItem &memoryItem, const std::string& memoryClassStr);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

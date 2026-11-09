@@ -15,13 +15,9 @@
 #ifndef GET_HEAP_INFO_H
 #define GET_HEAP_INFO_H
 
+#include <map>
+#include <memory>
 #include "executor/memory/memory_filter.h"
-#ifdef HIDUMPER_ABILITY_RUNTIME_ENABLE
-#include "app_malloc_info.h"
-#include "app_mgr_interface.h"
-#endif
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
 namespace OHOS {
 namespace HiviewDFX {
 struct MallHeapInfo {
@@ -37,12 +33,6 @@ public:
     using ValueMap = std::map<std::string, uint64_t>;
     using GroupMap = std::map<std::string, ValueMap>;
     void GetMallocHeapInfo(const int& pid, std::unique_ptr<MallHeapInfo>& mallocHeapInfo);
-
-private:
-#ifdef HIDUMPER_ABILITY_RUNTIME_ENABLE
-    const uint64_t numberSys = 1024;
-    OHOS::sptr<OHOS::AppExecFwk::IAppMgr> GetAppManagerInstance();
-#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

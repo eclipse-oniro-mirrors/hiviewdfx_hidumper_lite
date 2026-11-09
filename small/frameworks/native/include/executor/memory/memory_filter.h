@@ -18,6 +18,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
 #include "singleton.h"
 
 namespace OHOS {

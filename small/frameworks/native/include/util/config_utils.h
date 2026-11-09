@@ -29,38 +29,16 @@ public:
 public:
     // Used for get dumper configs
     static DumpStatus GetDumperConfigs(const std::shared_ptr<DumperParameter> &param);
-    // Used for get section names
-    static DumpStatus GetSectionNames(const std::string &name, std::vector<std::string> &nameList);
     // Used for get dump level
     static int GetDumpLevelByPid(int uid, const DumpCommonUtils::PidInfo &pidInfo);
-#ifdef DUMP_TEST_MODE // for mock test
-public:
-#else // for mock test
 private:
-#endif // for mock test
     DumpStatus GetDumperConfigs();
     bool MergePidInfos(std::vector<DumpCommonUtils::PidInfo> &outInfos, int pid);
-    bool HandleDumpLog(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpList(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpService(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpAbility(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpSystem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpCpuFreq(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     bool HandleDumpCpuUsage(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     bool HandleDumpMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpJsHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpCjHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpHeapMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpMemShowMaps(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
+    bool HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     void HandleDumpMemCommon(std::shared_ptr<DumperParameter> dumpParam,
         std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpStorage(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpNet(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpFaultLog(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpAppendix(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool HandleDumpIpcStat(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
-    bool CopySmaps();
     DumpStatus GetConfig(const std::string &name, std::vector<std::shared_ptr<DumpCfg>> &result,
         std::shared_ptr<OptionArgs> args);
     DumpStatus GetDumper(int index, std::vector<std::shared_ptr<DumpCfg>> &result,
@@ -76,18 +54,15 @@ private:
 private:
     DumpStatus GetGroupSimple(const GroupCfg& groupCfg, std::vector<std::shared_ptr<DumpCfg>> &result,
         std::shared_ptr<OptionArgs> args, int level = DumperConstant::NONE, int nest = 0);
-    static DumpStatus GetGroupNames(const std::string &name, std::vector<std::string> &nameList);
     static void ConvertTreeToList(std::vector<std::shared_ptr<DumpCfg>> &tree,
         std::vector<std::shared_ptr<DumpCfg>> &list, int nest = 0);
     static void SetSection(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs, const std::string &section, int nest = 0);
-    bool MergeDebugPidInfos(std::vector<DumpCommonUtils::PidInfo> &pidInfos, int pid);
 private:
     const std::shared_ptr<DumperParameter> dumperParam_;
     std::vector<DumpCommonUtils::PidInfo> pidInfos_;
     std::vector<DumpCommonUtils::CpuInfo> cpuInfos_;
     std::vector<DumpCommonUtils::PidInfo> currentPidInfos_;
     DumpCommonUtils::PidInfo currentPidInfo_;
-    bool isDumpSystemSystem {false};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

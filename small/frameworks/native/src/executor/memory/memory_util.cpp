@@ -15,6 +15,7 @@
 #include "executor/memory/memory_util.h"
 #include <cstdlib>
 #include <fstream>
+#include <algorithm>
 #include <thread>
 #include <vector>
 #include "securec.h"

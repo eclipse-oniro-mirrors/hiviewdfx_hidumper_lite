@@ -18,7 +18,6 @@
 #include <fstream>
 #include <numeric>
 #include <thread>
-#include <v1_0/imemory_tracker_interface.h>
 #include <cstring>
 
 #include "dump_common_utils.h"
@@ -33,14 +32,12 @@
 #include "executor/memory/parse/parse_meminfo.h"
 #include "executor/memory/parse/parse_smaps_rollup_info.h"
 #include "executor/memory/parse/parse_smaps_info.h"
-#include "hdf_base.h"
 #include "hilog_wrapper.h"
 #include "securec.h"
 #include "string_ex.h"
 #include "util/string_utils.h"
 
 using namespace std;
-using namespace OHOS::HDI::Memorytracker::V1_0;
 namespace OHOS {
 namespace HiviewDFX {
 static constexpr int LINE_WIDTH = 12;
@@ -63,11 +60,6 @@ void SmapsMemoryInfo::InsertSmapsTitle(StringMatrix result, bool isShowSmapsInfo
     vector<string> line2;
     vector<string> titleVec = isShowSmapsInfo ? MemoryFilter::GetInstance().TITLE_V_SMAPS_HAS_PID_ :
         MemoryFilter::GetInstance().TITLE_SMAPS_HAS_PID_;
-    if (DumpUtils::IsUserMode()) {
-        titleVec.erase(std::remove(titleVec.begin(), titleVec.end(), "Perm"), titleVec.end());
-        titleVec.erase(std::remove(titleVec.begin(), titleVec.end(), "Start"), titleVec.end());
-        titleVec.erase(std::remove(titleVec.begin(), titleVec.end(), "End"), titleVec.end());
-    }
     for (string str : titleVec) {
         vector<string> types;
         StringUtils::GetInstance().StringSplit(str, "_", types);
@@ -121,11 +113,9 @@ void SmapsMemoryInfo::SetOneRowMemInfo(const MemoryData &memInfo, bool isShowSma
     SetValueForRet(to_string(memInfo.swap), LINE_WIDTH, tempResult);
     SetValueForRet(to_string(memInfo.swapPss), LINE_WIDTH, tempResult);
     if (isShowSmapsInfo) {
-        if (!DumpUtils::IsUserMode()) {
-            SetValueForRet(memInfo.permission, LINE_WIDTH, tempResult);
-            SetValueForRet(memInfo.startAddr, LINE_START_VAL_WIDTH, tempResult);
-            SetValueForRet(memInfo.endAddr, LINE_WIDTH, tempResult);
-        }
+        SetValueForRet(memInfo.permission, LINE_WIDTH, tempResult);
+        SetValueForRet(memInfo.startAddr, LINE_START_VAL_WIDTH, tempResult);
+        SetValueForRet(memInfo.endAddr, LINE_WIDTH, tempResult);
     } else {
         SetValueForRet(to_string(memInfo.counts), LINE_WIDTH, tempResult);
     }

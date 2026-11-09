@@ -35,40 +35,11 @@ struct RequestInfo {
 struct DumperOptions {
     int cpuUsagePid = -1;
     int memPid = -1;
-    int storagePid = -1;
-    int netPid = -1;
     int processPid = -1;
-    int dumpJsHeapMemPid = -1;
-    int threadId = -1;
-    int ipcStatPid = -1;
     bool isDumpCpuFreq = false;
     bool isDumpCpuUsage = false;
-    bool isDumpLog = false;
     bool isDumpMem = false;
-    bool isDumpStorage = false;
-    bool isDumpNet = false;
-    bool isDumpList = false;
-    bool isDumpService = false;
-    bool isDumpSystemAbility = false;
-    bool isDumpSystem = false;
     bool isDumpProcesses = false;
-    bool isFaultLog = false;
-    bool isAppendix = false;
-    bool isShowSmaps = false;
-    bool isShowSmapsInfo = false;
-    bool isDumpJsHeapMem = false;
-    bool isDumpJsHeapMemGC = false;
-    bool isDumpJsHeapLeakobj = false;
-    bool isDumpJsHeapCombine = false;
-    bool isDumpAllIpc = false;
-    bool isDumpIpc = false;
-    bool isDumpIpcStartStat = false;
-    bool isDumpIpcStopStat = false;
-    bool isDumpIpcStat = false;
-    bool dumpJsRawHeap = false;
-    std::vector<std::string> abilityArgs = {};
-    std::vector<std::string> abilityNames = {};
-    std::set<std::string> systemArgs = {};
 };
 
 class DumpContext {

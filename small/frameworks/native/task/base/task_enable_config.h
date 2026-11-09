@@ -23,7 +23,6 @@
 #include <mutex>
 #include "task/base/task_struct.h"
 #include "common.h"
-#include "cJSON.h"
 #include "singleton.h"
 
 namespace OHOS {
@@ -42,7 +41,7 @@ private:
     DumpStatus ParseJsonContent(const std::string& content);
     
 private:
-    static constexpr const char* DEFAULT_CONFIG_PATH = "/system/etc/hidumper/task_enable_config.json";
+    static constexpr const char* DEFAULT_CONFIG_PATH = "/etc/hidumper/task_enable_config.json";
     
     std::unordered_map<TaskId, bool> taskEnableMap_;
     bool configLoaded_ = false;

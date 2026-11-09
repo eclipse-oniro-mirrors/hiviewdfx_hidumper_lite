@@ -17,18 +17,14 @@ config("utils_config") {
   include_dirs = [ "${hidumper_utils_path}/native/include" ]
 }
 
-ohos_source_set("utils") {
-  branch_protector_ret = "pac_ret"
-  sources = [ "native/src/permission.cpp" ]
+config("cpp17_config") {
+  cflags_cc = [ "-std=c++17" ]
+}
 
-  configs = [ ":utils_config" ]
 
-  external_deps = [
-    "c_utils:utils",
-    "init:libbegetutil",
+group("utils") {
+  public_configs = [
+    ":utils_config",
+    ":cpp17_config",
   ]
-
-  subsystem_name = "${hidumper_subsystem_name}"
-
-  part_name = "${hidumper_part_name}"
 }

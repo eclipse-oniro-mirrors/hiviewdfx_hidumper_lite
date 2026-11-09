@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <functional>
 
 namespace OHOS {
 namespace HiviewDFX {

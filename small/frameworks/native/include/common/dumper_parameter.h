@@ -29,10 +29,6 @@ public:
 public:
     void SetOpts(const DumperOpts &opts);
     const DumperOpts &GetOpts() const;
-    // set output file path
-    void SetOutputFilePath(std::string& path);
-    // get output file path
-    std::string& GetOutputFilePath();
     // set config list
     void SetExecutorConfigList(std::vector<std::shared_ptr<DumpCfg>>& list);
     // get config list

@@ -16,6 +16,7 @@
 #ifndef PARSE_ASHMEM_INFO_H
 #define PARSE_ASHMEM_INFO_H
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
