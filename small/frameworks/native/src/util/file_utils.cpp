@@ -134,19 +134,5 @@ string FileUtils::GetProcValue(const int32_t &pid, const string& path, const str
     }
 }
 
-bool FileUtils::GetLastWriteTime(const std::string &path, time_t& lastWriteTime)
-{
-    std::string realPath;
-    if (!OHOS::PathToRealPath(path, realPath)) {
-        DUMPER_HILOGE(MODULE_COMMON, "path is invalid");
-        return false;
-    }
-    fs::path filePath(realPath);
-    auto fsLastWriteTime = fs::last_write_time(filePath);
-    auto convertStandardTime = std::chrono::time_point_cast<std::chrono::system_clock::duration>(fsLastWriteTime -
-        fs::file_time_type::clock::now() + std::chrono::system_clock::now());
-    lastWriteTime = std::chrono::system_clock::to_time_t(convertStandardTime);
-    return true;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

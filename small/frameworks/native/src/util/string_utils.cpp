@@ -67,11 +67,6 @@ bool StringUtils::IsEnd(const string &content, const string &end)
     return result;
 }
 
-bool StringUtils::IsContain(const string &content, const string &contain)
-{
-    return IsSubStr(content, contain);
-}
-
 bool StringUtils::IsSameStr(const string &first, const string &second)
 {
     if (first == second) {
@@ -101,18 +96,6 @@ void StringUtils::HexToDec(const string &str, uint64_t &value)
     }
 }
 
-char StringUtils::GetBlank()
-{
-    char blank = ' ';
-    return blank;
-};
-
-char StringUtils::GetSeparator()
-{
-    char separator = '-';
-    return separator;
-}
-
 /**
  * @description: The character length is insufficient to complement
  * @param {string} &str-The string to be filled
@@ -133,36 +116,6 @@ void StringUtils::SetWidth(const int &width, const char &fileStr, const bool &le
         s << setw(width) << setfill(fileStr) << setiosflags(ios::right) << str;
     }
     str = s.str();
-}
-
-long long StringUtils::StringToUnixMs(const std::string& datetime)
-{
-    std::tm tm_time = {};
-    std::istringstream ss(datetime);
-    ss >> std::get_time(&tm_time, "%Y-%m-%d %H:%M:%S");
-    if (ss.fail()) {
-        return -1;
-    }
-    time_t time_sec = mktime(&tm_time);
-    if (time_sec == -1) {
-        return -1;
-    }
-    return static_cast<long long>(time_sec) * MILLISECONDS_PER_SECOND;
-}
-
-std::string StringUtils::UnixMsToString(uint64_t ms_timestamp)
-{
-    if (ms_timestamp > static_cast<uint64_t>(INT64_MAX)) {
-        return "";
-    }
-    int64_t ms_signed = static_cast<int64_t>(ms_timestamp);
-    time_t time_sec = static_cast<time_t>(ms_signed / MILLISECONDS_PER_SECOND);
-    std::tm tm_time;
-    localtime_r(&time_sec, &tm_time);
-
-    char buffer[20];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_time);
-    return std::string(buffer);
 }
 
 } // namespace HiviewDFX

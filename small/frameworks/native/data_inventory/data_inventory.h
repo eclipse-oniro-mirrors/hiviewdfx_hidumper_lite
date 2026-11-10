@@ -103,8 +103,6 @@ public:
     }
 
     using DataFilterHandler = std::function<void(std::string& line)>;
-    bool InjectString(const std::string& source, DataId dataId, bool isFile);
-    bool InjectStringWithFilter(const std::string& source, DataId dataId, bool isFile, const DataFilterHandler& func);
 
     std::set<DataId> RemoveRestData(const std::set<DataId>& keepingDataType);
     std::size_t Size() const;

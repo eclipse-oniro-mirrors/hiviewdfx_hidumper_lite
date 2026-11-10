@@ -31,13 +31,7 @@ public:
     int GetPid();
     uint32_t GetRequestId();
     bool IsCanceled();
-    bool IsFinished();
-    bool HasError();
 public:
-    void Cancel();
-    void UpdateStatus(uint32_t status, bool force = false);
-    void SetProgressEnabled(bool enable);
-    bool IsProgressEnabled() const;
     void UpdateProgress(uint32_t total, uint32_t current);
     void UpdateProgress(uint64_t progress);
     int& GetOutputFd();

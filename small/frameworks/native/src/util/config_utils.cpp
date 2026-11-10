@@ -19,7 +19,6 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 constexpr int ROOT_UID = 0;
-constexpr int BMS_UID = 1000;
 constexpr int APP_FIRST_UID = 10000;
 } // namespace
 

@@ -104,19 +104,6 @@ DumpStatus CMDDumper::AfterExecute()
 }
 
 // provide interface to others
-DumpStatus CMDDumper::GetCmdInterface(const std::string& cmd, StringMatrix dumpDatas)
-{
-    DumpStatus ret = DumpStatus::DUMP_MORE_DATA;
-    FILE* fp = popen((CMD_PREFIX + cmd).c_str(), "r");
-    if (fp == nullptr) {
-        return DumpStatus::DUMP_FAIL;
-    }
-    do {
-        ret = GetLineData(fp, dumpDatas);
-    } while (ret == DumpStatus::DUMP_MORE_DATA);
-    pclose(fp);
-    return ret;
-}
 
 DumpStatus CMDDumper::GetLineData(FILE* fp, StringMatrix dumpDatas)
 {

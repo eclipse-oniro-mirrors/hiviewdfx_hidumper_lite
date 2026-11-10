@@ -67,14 +67,6 @@ void DumpUtils::SetAdj(int adj)
     fdsan_close_with_tag(fd, FDTAG);
 }
 
-void DumpUtils::BoostPriority()
-{
-    IgnoreOom();
-    IgnorePipeQuit();
-    IgnoreStdoutCache();
-    SetAdj(topOomAdj);
-}
-
 std::string DumpUtils::ErrnoToMsg(const int &error)
 {
     const int bufSize = 128;

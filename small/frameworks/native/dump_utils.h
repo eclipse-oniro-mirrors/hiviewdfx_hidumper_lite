@@ -30,7 +30,6 @@ public:
     static void IgnorePipeQuit();
     static void IgnoreStdoutCache();
     static void SetAdj(int adj);
-    static void BoostPriority();
 
     // file operations
     static int FdToRead(const std::string &file);
@@ -44,7 +43,6 @@ public:
     static constexpr int topOomAdj = -1000;
     static constexpr char fileCurOomAdj[] = "/proc/self/oom_score_adj";
     static constexpr auto& space = " ";
-    static const int invalidPid = -1;
 private:
     static std::string ErrnoToMsg(const int &error);
 };

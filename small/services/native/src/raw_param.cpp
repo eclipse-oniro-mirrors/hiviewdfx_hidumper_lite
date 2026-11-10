@@ -120,39 +120,6 @@ bool RawParam::IsCanceled()
     return canceled_;
 }
 
-bool RawParam::IsFinished()
-{
-    return (canceled_ || finished_ || hasError_);
-}
-
-bool RawParam::HasError()
-{
-    return hasError_;
-}
-
-void RawParam::Cancel()
-{
-    canceled_ = true;
-    DUMPER_HILOGD(MODULE_SERVICE, "debug|reqId=%{public}u", reqId_);
-}
-
-void RawParam::UpdateStatus(uint32_t status, bool force)
-{
-    (void)status;
-    (void)force;
-    finished_ = true;
-}
-
-void RawParam::SetProgressEnabled(bool enable)
-{
-    progressEnabled_ = enable;
-}
-
-bool RawParam::IsProgressEnabled() const
-{
-    return progressEnabled_;
-}
-
 void RawParam::UpdateProgress(uint32_t total, uint32_t current)
 {
     if ((!progressEnabled_) || (outfd_ < 0) || (total < 1) || (total < current)) {

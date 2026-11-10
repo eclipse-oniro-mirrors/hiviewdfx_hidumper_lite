@@ -32,7 +32,6 @@ public:
 
     using ValueMap = std::map<std::string, uint64_t>;
     using GroupMap = std::map<std::string, ValueMap>;
-    void GetMallocHeapInfo(const int& pid, std::unique_ptr<MallHeapInfo>& mallocHeapInfo);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

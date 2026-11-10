@@ -39,7 +39,6 @@ public:
                  std::string taskName, std::vector<TaskId>&& taskDependency);
     TaskRegister(TaskId selfId, std::vector<DataId>&& dataDependency);
 
-    static TaskCollection CopyTaskInfo();
     static TaskCollection& GetContainer();
 };
 

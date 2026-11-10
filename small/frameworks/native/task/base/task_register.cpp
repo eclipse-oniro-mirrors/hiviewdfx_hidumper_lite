@@ -39,9 +39,5 @@ TaskCollection& TaskRegister::GetContainer()
     return container;
 }
 
-TaskCollection TaskRegister::CopyTaskInfo()
-{
-    return GetContainer();
-}
 }
 }

@@ -68,53 +68,17 @@ void DmaInfo::CreateDmaInfo(const string &str)
  * @param void
  * @return {bool}-the result of
  */
-bool DmaInfo::ParseDmaInfo()
-{
-    if (initialized_) {
-        return true;
-    }
-    initialized_ = true;
-    string path = "/proc/process_dmabuf_info";
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, false, true, [&](const string &line) -> void {
-        CreateDmaInfo(line);
-    });
-    for (const auto &it : dmaInfos_) {
-        auto dma = dmaMap_.find(it.second.pid);
-        if (dma != dmaMap_.end()) {
-            dma->second += it.second.size;
-        } else {
-            dmaMap_.insert(pair<uint32_t, uint64_t>(it.second.pid, it.second.size));
-        }
-    }
-    return ret;
-}
 
 /**
  * @description: get dma total
  * @param void
  * @return {uint64_t} dma total
  */
-uint64_t DmaInfo::GetTotalDma()
-{
-    uint64_t totalDma = 0;
-    for (const auto &it : dmaMap_) {
-        totalDma += it.second;
-    }
-    return totalDma;
-}
 
 /**
  * @description: get dma by pid
  * @param {int32_t} &pid-process id
  * @return dma value of process
  */
-uint64_t DmaInfo::GetDmaByPid(const int32_t &pid) const
-{
-    auto it = dmaMap_.find(pid);
-    if (it != dmaMap_.end()) {
-        return it->second;
-    }
-    return 0;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

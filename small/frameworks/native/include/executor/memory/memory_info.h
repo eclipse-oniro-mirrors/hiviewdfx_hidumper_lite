@@ -76,19 +76,13 @@ private:
     const size_t TYPE_SIZE = 2;
     const char SEPARATOR_ = '-';
     const char BLANK_ = ' ';
-    const static int NAME_SIZE_ = 2;
-    const uint32_t GPU_MEM_TYPE = 3;
-    const uint32_t GPU_INFO_TYPE = 32;
-    const uint32_t GPU_DFX_LIMIT = 0;
     const int PID_WIDTH_ = 5;
     const int NAME_WIDTH_ = 20;
     const int PSS_WIDTH_ = 30;
     const int KB_WIDTH_ = 12;
     const int NAME_AND_PID_WIDTH = 30;
-    const int MALLOC_HEAP_TYPES = 3;
     const static int VSS_BIT = 4;
     const static int BYTE_PER_KB = 1024;
-    const std::string ZERO = "0";
 
     bool isReady_ = false;
     bool dumpPrune_ = false;
@@ -139,7 +133,6 @@ private:
     static std::string GetProcessAdjLabel(const int32_t pid);
 #endif
     static int GetScoreAdj(const int32_t pid);
-    static void InitMemInfo(MemInfoData::MemInfo &memInfo);
     static void InitMemUsage(MemInfoData::MemUsage &usage);
     void GetSortedMemoryInfoNoPid(StringMatrix result);
 #ifdef HIDUMPER_MEMMGR_ENABLE

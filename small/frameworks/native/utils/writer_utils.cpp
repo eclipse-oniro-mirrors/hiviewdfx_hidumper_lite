@@ -59,52 +59,6 @@ void WriteStringIntoFd(const std::vector<std::string>& strs, int fd)
     }
 }
 
-bool HandleStringFromFile(const std::string& path, const DataHandler& func)
-{
-    char canonicalPath[PATH_MAX] = {0};
-    if (realpath(path.c_str(), canonicalPath) == nullptr) {
-        DUMPER_HILOGE(MODULE_COMMON, "realpath failed, errno=%{public}d, path=%{public}s", errno, path.c_str());
-        return false;
-    }
-    std::ifstream file(canonicalPath);
-    if (!file.is_open()) {
-        DUMPER_HILOGE(MODULE_COMMON, "Failed to open file, path=%{public}s", path.c_str());
-        return false;
-    }
-    std::string line;
-    while (std::getline(file, line)) {
-        line += '\n';
-        if (!func(line)) {
-            break;
-        }
-    }
-    return true;
-}
-
-bool HandleStringFromCommand(const std::string& command, const DataHandler& func)
-{
-    auto pipe = std::unique_ptr<FILE, decltype(&pclose)>{popen(command.c_str(), "r"), pclose};
-    if (pipe == nullptr) {
-        DUMPER_HILOGE(MODULE_COMMON, "popen failed, errno=%{public}d, command=%{public}s", errno, command.c_str());
-        return false;
-    }
-    char *lineBuf = nullptr;
-    ssize_t lineLen;
-    size_t lineAlloc = 0;
-    while ((lineLen = getline(&lineBuf, &lineAlloc, pipe.get())) > 0) {
-        lineBuf[lineLen] = '\0';
-        const std::string content = lineBuf;
-        if (!func(content)) {
-            break;
-        }
-    }
-    if (lineBuf != nullptr) {
-        free(lineBuf);
-        lineBuf = nullptr;
-    }
-    return true;
-}
-
 bool LoadStringFromFile(const std::string& path, std::string& content)
 {
     return OHOS::LoadStringFromFile(path, content);

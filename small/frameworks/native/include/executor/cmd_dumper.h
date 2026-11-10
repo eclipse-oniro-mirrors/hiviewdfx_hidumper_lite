@@ -28,7 +28,6 @@ public:
     DumpStatus Execute() override;
     DumpStatus AfterExecute() override;
     DumpStatus GetLineData(FILE* fp, StringMatrix dumpDatas);
-    DumpStatus GetCmdInterface(const std::string& cmd, StringMatrix dumpDatas);
 
 private:
     DumpStatus ReadLineInCmd();

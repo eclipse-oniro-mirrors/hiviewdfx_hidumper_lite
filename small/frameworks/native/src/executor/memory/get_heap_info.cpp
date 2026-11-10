@@ -28,13 +28,5 @@ GetHeapInfo::GetHeapInfo()
 GetHeapInfo::~GetHeapInfo()
 {
 }
-void GetHeapInfo::GetMallocHeapInfo(const int& pid, std::unique_ptr<MallHeapInfo>& mallocHeapInfo)
-{
-    DUMPER_HILOGI(MODULE_SERVICE, "GetMallocHeapInfo pid:%{public}d begin.", pid);
-    mallocHeapInfo->size = 0;
-    mallocHeapInfo->alloc = 0;
-    mallocHeapInfo->freeSize = 0;
-    DUMPER_HILOGI(MODULE_SERVICE, "GetMallocHeapInfo pid:%{public}d end, success!", pid);
-}
 } // namespace HiviewDFX
 } // namespace OHOS

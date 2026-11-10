@@ -20,8 +20,6 @@ namespace HiviewDFX {
 const int ARG_MIN_COUNT = 1;
 const int ARG_MAX_COUNT = 64;
 const int SINGLE_ARG_MAXLEN = 256;
-const uint32_t SIZE_KB = 1024;
-const uint32_t LIMIT_SIZE = 32; // 32KB
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

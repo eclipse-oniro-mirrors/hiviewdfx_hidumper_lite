@@ -46,14 +46,8 @@ public:
     size_t GetMaxThreadNum(const size_t &threadNum);
     bool IsNameLine(const std::string &str, std::string &name, uint64_t &iNode);
     bool GetTypeValue(const std::string &str, const std::vector<std::string> &tag, std::string &type, uint64_t &value);
-    void InitMemInfo(MemInfoData::MemInfo &memInfo);
-    void InitMemSmapsInfo(MemInfoData::MemSmapsInfo &memInfo);
     void InitMemUsage(MemInfoData::MemUsage &usage);
-    void InitGraphicsMemory(MemInfoData::GraphicsMemory &graphicsMemory);
     bool GetTypeAndValue(const std::string &str, std::string &type, uint64_t &value);
-    void SetMemTotalValue(const std::string &value, std::vector<std::string> &lines, std::vector<std::string> &values,
-        bool flag = false);
-    uint64_t PermToInt(const std::string& perm);
 
 private:
     std::mutex mutex_;

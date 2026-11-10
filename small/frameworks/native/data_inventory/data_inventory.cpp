@@ -63,34 +63,5 @@ std::size_t DataInventory::Size() const
     return data_.size();
 }
 
-bool DataInventory::InjectString(const std::string& source, DataId dataId, bool isFile)
-{
-    std::vector<std::string> result = {};
-    auto loader = isFile ? HandleStringFromFile : HandleStringFromCommand;
-    if (!loader(source, [&result](const std::string& line) {
-        result.emplace_back(line);
-        return true;
-    })) {
-        return false;
-    }
-    return Inject(dataId, std::make_shared<std::vector<std::string>>(result));
-}
-
-bool DataInventory::InjectStringWithFilter(const std::string& source, DataId dataId,
-                                           bool isFile, const DataFilterHandler& func)
-{
-    std::vector<std::string> result = {};
-    auto loader = isFile ? HandleStringFromFile : HandleStringFromCommand;
-    if (!loader(source, [&result, &func](const std::string& line) {
-        std::string formatLine = line;
-        func(formatLine);
-        result.emplace_back(formatLine);
-        return true;
-    })) {
-        return false;
-    }
-    return Inject(dataId, std::make_shared<std::vector<std::string>>(result));
-}
-
 } // namespace HiviewDFX
 } // namespace OHOS

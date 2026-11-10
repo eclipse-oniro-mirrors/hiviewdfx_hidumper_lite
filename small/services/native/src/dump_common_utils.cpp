@@ -40,27 +40,6 @@ static const int TM_START_YEAR = 1900;
 static const int DEC_SYSTEM_VALUE = 10;
 }
 
-std::vector<std::string> DumpCommonUtils::GetSubNodes(const std::string &path, bool digit)
-{
-    std::vector<std::string> subNodes;
-    auto dir = opendir(path.c_str());
-    if (dir == nullptr) {
-        return subNodes;
-    }
-    for (struct dirent *ent = readdir(dir); ent != nullptr; ent = readdir(dir)) {
-        std::string childNode = ent->d_name;
-        if (childNode == "." || childNode == "..") {
-            continue;
-        }
-        if (digit && !IsNumericStr(childNode)) {
-            continue;
-        }
-        subNodes.push_back(childNode);
-    }
-    closedir(dir);
-    return subNodes;
-}
-
 // the parameter of path should be full.
 bool DumpCommonUtils::IsDirectory(const std::string &path)
 {

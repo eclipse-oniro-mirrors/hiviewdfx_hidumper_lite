@@ -94,53 +94,14 @@ bool OptionArgs::HasStr() const
     return hasStr_;
 }
 
-void OptionArgs::SetStr(const std::string& str)
-{
-    hasStr_ = true;
-    str_ = str;
-}
-
-const std::string& OptionArgs::GetStr() const
-{
-    return str_;
-}
-
 bool OptionArgs::HasStrList() const
 {
     return hasList_;
 }
 
-void OptionArgs::SetStrList(const std::vector<std::string>& list)
-{
-    hasList_ = true;
-    list_.assign(list.begin(), list.end());
-}
-
-const std::vector<std::string>& OptionArgs::GetStrList() const
-{
-    return list_;
-}
-
 bool OptionArgs::HasNamesAndArgs() const
 {
     return hasNamesAndArgs_;
-}
-
-void OptionArgs::SetNamesAndArgs(const std::vector<std::string>& names, const std::vector<std::string>& args)
-{
-    hasNamesAndArgs_ = true;
-    names_.assign(names.begin(), names.end());
-    args_.assign(args.begin(), args.end());
-}
-
-const std::vector<std::string>& OptionArgs::GetNameList() const
-{
-    return names_;
-}
-
-const std::vector<std::string>& OptionArgs::GetArgList() const
-{
-    return args_;
 }
 
 void OptionArgs::Dump() const

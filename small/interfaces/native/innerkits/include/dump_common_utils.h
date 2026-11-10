@@ -40,7 +40,6 @@ public:
         void Reset();
     };
     // get subNodes information by pid.
-    static std::vector<std::string> GetSubNodes(const std::string &path, bool digit);
     // get subDir information by pid.
     static bool IsDirectory(const std::string &path);
     static std::vector<std::string> GetSubDir(const std::string &path, bool digit);

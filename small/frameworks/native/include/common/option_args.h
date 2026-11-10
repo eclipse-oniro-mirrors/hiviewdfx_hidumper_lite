@@ -35,17 +35,10 @@ public:
     int GetCpuId() const;
 
     bool HasStr() const;
-    void SetStr(const std::string& str);
-    const std::string& GetStr() const;
 
     bool HasStrList() const;
-    void SetStrList(const std::vector<std::string>& list);
-    const std::vector<std::string>& GetStrList() const;
 
     bool HasNamesAndArgs() const;
-    void SetNamesAndArgs(const std::vector<std::string>& names, const std::vector<std::string>& args);
-    const std::vector<std::string>& GetNameList() const;
-    const std::vector<std::string>& GetArgList() const;
 
     void Dump() const;
     static std::shared_ptr<OptionArgs> Create();

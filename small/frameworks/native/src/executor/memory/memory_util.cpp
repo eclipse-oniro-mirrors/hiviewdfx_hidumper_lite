@@ -127,39 +127,6 @@ size_t MemoryUtil::GetMaxThreadNum(const size_t &threadNum)
     return maxThreadNum;
 }
 
-void MemoryUtil::InitMemInfo(MemInfoData::MemInfo &memInfo)
-{
-    memInfo.rss = 0;
-    memInfo.pss = 0;
-    memInfo.sharedClean = 0;
-    memInfo.sharedDirty = 0;
-    memInfo.privateClean = 0;
-    memInfo.privateDirty = 0;
-    memInfo.swap = 0;
-    memInfo.swapPss = 0;
-    memInfo.heapSize = 0;
-    memInfo.heapAlloc = 0;
-    memInfo.heapFree = 0;
-}
-
-
-void MemoryUtil::InitMemSmapsInfo(MemInfoData::MemSmapsInfo &memInfo)
-{
-    memInfo.rss = 0;
-    memInfo.pss = 0;
-    memInfo.sharedClean = 0;
-    memInfo.sharedDirty = 0;
-    memInfo.privateClean = 0;
-    memInfo.privateDirty = 0;
-    memInfo.swap = 0;
-    memInfo.swapPss = 0;
-    memInfo.name = "";
-    memInfo.size = 0;
-    memInfo.counts = 0;
-    memInfo.start = "";
-    memInfo.end = "";
-    memInfo.perm = "";
-}
 
 
 void MemoryUtil::InitMemUsage(MemInfoData::MemUsage &usage)
@@ -175,12 +142,6 @@ void MemoryUtil::InitMemUsage(MemInfoData::MemUsage &usage)
     usage.pid = 0;
 }
 
-void MemoryUtil::InitGraphicsMemory(MemInfoData::GraphicsMemory &graphicsMemory)
-{
-    graphicsMemory.gl = 0;
-    graphicsMemory.graph = 0;
-}
-
 bool MemoryUtil::GetTypeAndValue(const string &str, string &type, uint64_t &value)
 {
     string::size_type typePos = str.find(":");
@@ -194,39 +155,5 @@ bool MemoryUtil::GetTypeAndValue(const string &str, string &type, uint64_t &valu
     return false;
 }
 
-void MemoryUtil::SetMemTotalValue(const string &value, vector<string> &lines, vector<string> &values, bool flag)
-{
-    if (!flag) {
-        string separator = "-";
-        string space = " ";
-        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, space);
-        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, separator);
-        lines.push_back(separator + SEPARATOR_);
-    }
-    string tempValue = value;
-    if (flag) {
-        if (StringUtils::GetInstance().IsSameStr(value, "Summary")) {
-            constexpr int SMPAPS_INFO_WIDTH = 25;
-            StringUtils::GetInstance().SetWidth(SMPAPS_INFO_WIDTH, BLANK_, false, tempValue);
-        } else {
-            StringUtils::GetInstance().SetWidth(SMAPS_LINE_WIDTH_, BLANK_, true, tempValue);
-        }
-    } else {
-        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, tempValue);
-        tempValue += BLANK_;
-    }
-    values.push_back(tempValue);
-}
-
-uint64_t MemoryUtil::PermToInt(const string& perm)
-{
-    uint64_t iPerm = 0;
-    for (size_t i = 0; i < perm.size(); i++) {
-        if (perm[i] != '-' && perm[i] != 's') {
-            iPerm |= (1 << i);
-        }
-    }
-    return iPerm;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

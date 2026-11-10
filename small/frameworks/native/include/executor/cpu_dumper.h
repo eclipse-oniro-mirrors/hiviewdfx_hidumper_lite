@@ -29,7 +29,6 @@ public:
     DumpStatus AfterExecute() override;
 
 private:
-    DumpCpuData GetDumpCpuData();
     bool DumpCpuUsage(int pid);
 
     StringMatrix dumpCPUDatas_;

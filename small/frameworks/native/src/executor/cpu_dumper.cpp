@@ -354,14 +354,5 @@ bool CPUDumper::DumpCpuUsage(int pid)
     return true;
 }
 
-DumpCpuData CPUDumper::GetDumpCpuData()
-{
-    DumpCpuData dumpCpu;
-    dumpCpu.startTime_ = startTime_;
-    dumpCpu.endTime_ = endTime_;
-    dumpCpu.dumpCPUDatas_ = *dumpCPUDatas_;
-    dumpCpu.cpuUsagePid_ = cpuUsagePid_;
-    return dumpCpu;
-}
 } // namespace HiviewDFX
 } // namespace OHOS
