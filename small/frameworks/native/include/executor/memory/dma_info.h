@@ -30,8 +30,6 @@ public:
 
     using ValueMap = std::map<uint32_t, uint64_t>;
     using DmaInfoMap = std::map<uint64_t, MemInfoData::DmaInfo>;
-
-
 private:
     void CreateDmaInfo(const std::string &line);
 

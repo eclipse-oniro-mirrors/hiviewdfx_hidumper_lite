@@ -127,8 +127,6 @@ size_t MemoryUtil::GetMaxThreadNum(const size_t &threadNum)
     return maxThreadNum;
 }
 
-
-
 void MemoryUtil::InitMemUsage(MemInfoData::MemUsage &usage)
 {
     usage.vss = 0;
