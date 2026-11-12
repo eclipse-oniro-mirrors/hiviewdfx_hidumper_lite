@@ -532,9 +532,6 @@ void MemoryInfo::SetTotalRow(const ClassSummary &total, StringMatrix result)
     result->push_back(values);
 }
 
-
-
-
 void MemoryInfo::GetDma(const uint64_t &dmaValue, StringMatrix result)
 {
     AddBlankLine(result);
