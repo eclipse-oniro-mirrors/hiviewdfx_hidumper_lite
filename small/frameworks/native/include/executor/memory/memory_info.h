@@ -90,7 +90,6 @@ private:
     const std::vector<std::string> MEMORY_PRINT_ORDER_VEC = {
         "ark ts heap", "arkts-static heap", "guard", "native heap", ".hap", "AnonPage other",
         "stack", ".db", ".so", "dev", "dmabuf", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap",
-        "kotlin heap", "rn-hermes heap", "dart heap"
     };
     int TITLE_WIDTH_ = 17;
     const int RAM_WIDTH_ = 16;

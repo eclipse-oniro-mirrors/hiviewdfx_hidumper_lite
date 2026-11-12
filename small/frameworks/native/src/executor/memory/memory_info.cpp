@@ -283,6 +283,88 @@ void MemoryInfo::GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const i
 namespace {
 
 
+void AccumulateSmapsValue(const std::string &key, uint64_t value, ClassSummary &current)
+{
+    if (key == "Pss") {
+        current.pss += value;
+    } else if (key == "Shared_Clean") {
+        current.sharedClean += value;
+    } else if (key == "Shared_Dirty") {
+        current.sharedDirty += value;
+    } else if (key == "Private_Clean") {
+        current.privateClean += value;
+    } else if (key == "Private_Dirty") {
+        current.privateDirty += value;
+    } else if (key == "Swap") {
+        current.swap += value;
+    } else if (key == "SwapPss") {
+        current.swapPss += value;
+    }
+}
+
+void AddSummary(ClassSummary &dst, const ClassSummary &src)
+{
+    dst.pss += src.pss;
+    dst.sharedClean += src.sharedClean;
+    dst.sharedDirty += src.sharedDirty;
+    dst.privateClean += src.privateClean;
+    dst.privateDirty += src.privateDirty;
+    dst.swap += src.swap;
+    dst.swapPss += src.swapPss;
+}
+
+std::string ResolveClassName(const std::string &name, bool anon)
+{
+    std::string groupRaw;
+    MemoryFilter::GetInstance().ParseMemoryGroup(name, groupRaw, anon ? 0 : 1);
+    std::string group = groupRaw;
+    size_t hashPos = groupRaw.find('#');
+    if (hashPos != std::string::npos) {
+        group = groupRaw.substr(hashPos + 1);
+    }
+    if (group == "other") {
+        group = anon ? "AnonPage other" : "FilePage other";
+    }
+    return group;
+}
+
+void FlushMapping(const std::string &name, bool anon, ClassSummary &current,
+    std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
+{
+    if (name.empty()) {
+        return;
+    }
+    std::string group = ResolveClassName(name, anon);
+    AddSummary(classMap[group], current);
+    AddSummary(total, current);
+    current = ClassSummary();
+}
+
+bool IsMappingHeader(const std::string &line)
+{
+    size_t firstSpace = line.find(' ');
+    size_t firstDash = line.find('-');
+    return !line.empty() && isxdigit(static_cast<unsigned char>(line[0]))
+        && firstDash != std::string::npos && firstSpace != std::string::npos && firstDash < firstSpace;
+}
+
+void ParseMappingHeader(const std::string &line, std::string &name, bool &anon)
+{
+    std::istringstream iss(line);
+    std::string addr;
+    std::string perms;
+    std::string offset;
+    std::string dev;
+    unsigned long inode = 0;
+    iss >> addr >> perms >> offset >> dev >> inode;
+    anon = (inode == 0);
+    size_t pos = line.find_last_of(' ');
+    std::string lastName = (pos == std::string::npos) ? "" : line.substr(pos + 1);
+    bool nameIsNumber = !lastName.empty()
+        && lastName.find_first_not_of("0123456789") == std::string::npos;
+    name = nameIsNumber ? "" : lastName;
+}
+
 bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
 {
     std::string path = "/proc/" + std::to_string(pid) + "/smaps";
@@ -294,65 +376,10 @@ bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap,
     std::string currentName;
     bool currentAnon = true;
     ClassSummary current;
-    auto accumulate = [&](const std::string &key, uint64_t value) {
-        if (key == "Pss") { current.pss += value; }
-        else if (key == "Shared_Clean") { current.sharedClean += value; }
-        else if (key == "Shared_Dirty") { current.sharedDirty += value; }
-        else if (key == "Private_Clean") { current.privateClean += value; }
-        else if (key == "Private_Dirty") { current.privateDirty += value; }
-        else if (key == "Swap") { current.swap += value; }
-        else if (key == "SwapPss") { current.swapPss += value; }
-    };
-    auto flush = [&]() {
-        if (currentName.empty()) {
-            return;
-        }
-        std::string groupRaw;
-        MemoryFilter::GetInstance().ParseMemoryGroup(currentName, groupRaw, currentAnon ? 0 : 1);
-        std::string group = groupRaw;
-        size_t hashPos = groupRaw.find('#');
-        if (hashPos != std::string::npos) {
-            group = groupRaw.substr(hashPos + 1);
-        }
-        if (group == "other") {
-            group = currentAnon ? "AnonPage other" : "FilePage other";
-        }
-                ClassSummary &dst = classMap[group];
-        dst.pss += current.pss;
-        dst.sharedClean += current.sharedClean;
-        dst.sharedDirty += current.sharedDirty;
-        dst.privateClean += current.privateClean;
-        dst.privateDirty += current.privateDirty;
-        dst.swap += current.swap;
-        dst.swapPss += current.swapPss;
-        total.pss += current.pss;
-        total.sharedClean += current.sharedClean;
-        total.sharedDirty += current.sharedDirty;
-        total.privateClean += current.privateClean;
-        total.privateDirty += current.privateDirty;
-        total.swap += current.swap;
-        total.swapPss += current.swapPss;
-        current = ClassSummary();
-    };
     while (std::getline(file, line)) {
-        size_t firstSpace = line.find(' ');
-        size_t firstDash = line.find('-');
-        if (!line.empty() && isxdigit(static_cast<unsigned char>(line[0]))
-            && firstDash != std::string::npos && firstSpace != std::string::npos && firstDash < firstSpace) {
-            flush();
-            std::istringstream iss(line);
-            std::string addr;
-            std::string perms;
-            std::string offset;
-            std::string dev;
-            unsigned long inode = 0;
-            iss >> addr >> perms >> offset >> dev >> inode;
-            currentAnon = (inode == 0);
-            size_t pos = line.find_last_of(' ');
-            std::string lastName = (pos == std::string::npos) ? "" : line.substr(pos + 1);
-            bool nameIsNumber = !lastName.empty()
-                && lastName.find_first_not_of("0123456789") == std::string::npos;
-            currentName = nameIsNumber ? "" : lastName;
+        if (IsMappingHeader(line)) {
+            FlushMapping(currentName, currentAnon, current, classMap, total);
+            ParseMappingHeader(line, currentName, currentAnon);
             continue;
         }
         size_t pos = line.find(':');
@@ -363,9 +390,9 @@ bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap,
         uint64_t value = 0;
         std::istringstream iss(line.substr(pos + 1));
         iss >> value;
-        accumulate(key, value);
+        AccumulateSmapsValue(key, value, current);
     }
-    flush();
+    FlushMapping(currentName, currentAnon, current, classMap, total);
     return !classMap.empty() || total.pss > 0 || total.sharedClean > 0 || total.privateDirty > 0;
 }
 
@@ -727,9 +754,6 @@ void MemoryInfo::GetPurgByPid(const int32_t &pid, StringMatrix result)
     purgPin.push_back(AddKbUnit(GetProcValue(pid, MemoryFilter::GetInstance().PURGPIN_OUT_LABEL)));
     result->push_back(purgPin);
 }
-
-
-
 
 void MemoryInfo::GetRamCategory(const GroupMap &smapsInfos, const ValueMap &meminfos, StringMatrix result)
 {
