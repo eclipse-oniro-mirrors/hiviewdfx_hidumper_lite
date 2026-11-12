@@ -52,8 +52,3 @@ ohos_source_set("hidumperservice_source") {
 
   part_name = "${hidumper_part_name}"
 }
-
-copy("task_enable_config") {
-  sources = [ "native/etc/task_enable_config.json" ]
-  outputs = [ "$root_out_dir/etc/hidumper/task_enable_config.json" ]
-}

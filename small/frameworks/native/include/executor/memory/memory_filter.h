@@ -46,6 +46,8 @@ public:
     const std::string GL_OUT_LABEL = "GL";
     const std::string GRAPH_OUT_LABEL = "Graph";
     const std::string DMA_OUT_LABEL = "Dma";
+    const std::vector<std::string> TITLE_HAS_PID_ = {"Pss_Total", "Shared_Clean", "Shared_Dirty", "Private_Clean",
+        "Private_Dirty", "Swap_Total", "SwapPss_Total", "Heap_Size", "Heap_Alloc", "Heap_Free"};
     const std::string PURGSUM_OUT_LABEL = "PurgSum";
     const std::string PURGPIN_OUT_LABEL = "PurgPin";
 

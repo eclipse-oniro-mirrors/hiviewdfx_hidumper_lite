@@ -32,8 +32,6 @@
 #include "executor/memory/get_process_info.h"
 #include "executor/memory/get_ram_info.h"
 #include "executor/memory/memory_util.h"
-#include "executor/memory/parse/parse_ashmem_info.h"
-#include "executor/memory/parse/parse_dmabuf_info.h"
 #include "executor/memory/parse/parse_meminfo.h"
 #include "executor/memory/parse/parse_smaps_rollup_info.h"
 #include "executor/memory/parse/parse_smaps_info.h"
@@ -64,7 +62,6 @@ constexpr int ONE_STAR = 1;
 constexpr int APP_UID = 20000;
 constexpr int LINE_SPACING = 6;
 constexpr int DMABUF_MAX_WIDTH = 33;
-constexpr int METRIC_NAME_WIDTH = 20;
 
 MemoryInfo::MemoryInfo()
 {
@@ -273,7 +270,7 @@ void MemoryInfo::GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const i
     int prevLineCount = 0;
     while (g_isDumpMem) {
         StringMatrix result = std::make_shared<std::vector<std::vector<std::string>>>();
-        GetMemoryInfoByPid(pid, result, false, false, false);
+        GetMemoryInfoByPid(pid, result);
         pssValues.push_back(static_cast<int>(currentPss_));
         PrintMemoryInfo(pssValues, &prevLineCount);
         RedirectMemoryInfo(static_cast<int>(pssValues.size()), result);
@@ -284,18 +281,9 @@ void MemoryInfo::GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const i
 }
 
 namespace {
-struct SmapsSummary {
-    uint64_t pss = 0;
-    uint64_t rss = 0;
-    uint64_t swap = 0;
-    uint64_t swapPss = 0;
-    uint64_t privateClean = 0;
-    uint64_t privateDirty = 0;
-    uint64_t sharedClean = 0;
-    uint64_t sharedDirty = 0;
-};
 
-bool ReadSmapsSummary(int32_t pid, SmapsSummary& summary)
+
+bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
 {
     std::string path = "/proc/" + std::to_string(pid) + "/smaps";
     std::ifstream file(path);
@@ -303,88 +291,240 @@ bool ReadSmapsSummary(int32_t pid, SmapsSummary& summary)
         return false;
     }
     std::string line;
+    std::string currentName;
+    bool currentAnon = true;
+    ClassSummary current;
+    auto accumulate = [&](const std::string &key, uint64_t value) {
+        if (key == "Pss") { current.pss += value; }
+        else if (key == "Shared_Clean") { current.sharedClean += value; }
+        else if (key == "Shared_Dirty") { current.sharedDirty += value; }
+        else if (key == "Private_Clean") { current.privateClean += value; }
+        else if (key == "Private_Dirty") { current.privateDirty += value; }
+        else if (key == "Swap") { current.swap += value; }
+        else if (key == "SwapPss") { current.swapPss += value; }
+    };
+    auto flush = [&]() {
+        if (currentName.empty()) {
+            return;
+        }
+        std::string groupRaw;
+        MemoryFilter::GetInstance().ParseMemoryGroup(currentName, groupRaw, currentAnon ? 0 : 1);
+        std::string group = groupRaw;
+        size_t hashPos = groupRaw.find('#');
+        if (hashPos != std::string::npos) {
+            group = groupRaw.substr(hashPos + 1);
+        }
+        if (group == "other") {
+            group = currentAnon ? "AnonPage other" : "FilePage other";
+        }
+                ClassSummary &dst = classMap[group];
+        dst.pss += current.pss;
+        dst.sharedClean += current.sharedClean;
+        dst.sharedDirty += current.sharedDirty;
+        dst.privateClean += current.privateClean;
+        dst.privateDirty += current.privateDirty;
+        dst.swap += current.swap;
+        dst.swapPss += current.swapPss;
+        total.pss += current.pss;
+        total.sharedClean += current.sharedClean;
+        total.sharedDirty += current.sharedDirty;
+        total.privateClean += current.privateClean;
+        total.privateDirty += current.privateDirty;
+        total.swap += current.swap;
+        total.swapPss += current.swapPss;
+        current = ClassSummary();
+    };
     while (std::getline(file, line)) {
-        auto pos = line.find(':');
+        size_t firstSpace = line.find(' ');
+        size_t firstDash = line.find('-');
+        if (!line.empty() && isxdigit(static_cast<unsigned char>(line[0]))
+            && firstDash != std::string::npos && firstSpace != std::string::npos && firstDash < firstSpace) {
+            flush();
+            std::istringstream iss(line);
+            std::string addr;
+            std::string perms;
+            std::string offset;
+            std::string dev;
+            unsigned long inode = 0;
+            iss >> addr >> perms >> offset >> dev >> inode;
+            currentAnon = (inode == 0);
+            size_t pos = line.find_last_of(' ');
+            std::string lastName = (pos == std::string::npos) ? "" : line.substr(pos + 1);
+            bool nameIsNumber = !lastName.empty()
+                && lastName.find_first_not_of("0123456789") == std::string::npos;
+            currentName = nameIsNumber ? "" : lastName;
+            continue;
+        }
+        size_t pos = line.find(':');
         if (pos == std::string::npos) {
             continue;
         }
-        std::istringstream iss(line.substr(pos + 1));
-        uint64_t value = 0;
-        if (!(iss >> value)) {
-            continue;
-        }
         std::string key = line.substr(0, pos);
-        if (key == "Pss") {
-            summary.pss += value;
-        } else if (key == "Rss") {
-            summary.rss += value;
-        } else if (key == "Swap") {
-            summary.swap += value;
-        } else if (key == "SwapPss") {
-            summary.swapPss += value;
-        } else if (key == "Private_Clean") {
-            summary.privateClean += value;
-        } else if (key == "Private_Dirty") {
-            summary.privateDirty += value;
-        } else if (key == "Shared_Clean") {
-            summary.sharedClean += value;
-        } else if (key == "Shared_Dirty") {
-            summary.sharedDirty += value;
-        }
+        uint64_t value = 0;
+        std::istringstream iss(line.substr(pos + 1));
+        iss >> value;
+        accumulate(key, value);
     }
-    return true;
+    flush();
+    return !classMap.empty() || total.pss > 0 || total.sharedClean > 0 || total.privateDirty > 0;
 }
 
-void AppendMetricRow(MemoryInfo::StringMatrix result, const std::string& name, uint64_t value)
-{
-    vector<string> row;
-    string title = name + ":";
-    StringUtils::GetInstance().SetWidth(METRIC_NAME_WIDTH, ' ', false, title);
-    row.push_back(title + to_string(value) + MemoryUtil::GetInstance().KB_UNIT_);
-    result->push_back(row);
-}
 } // namespace
 
-bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result,
-                                    bool showAshmem, bool showDmaBuf, bool showGpumem)
+bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    SmapsSummary summary;
-    if (!ReadSmapsSummary(pid, summary)) {
+    std::map<std::string, ClassSummary> classMap;
+    ClassSummary total;
+    if (!CollectSmapsByClass(pid, classMap, total)) {
         DUMPER_HILOGE(MODULE_SERVICE, "read smaps fail, pid:%{public}d", pid);
         return false;
     }
-    currentPss_ = summary.pss;
+    currentPss_ = total.pss;
 
-    string name = GetProcName(pid);
-    vector<string> titleRow;
-    titleRow.push_back("Process Memory Information : " + name + "(pid = " + to_string(pid) + ")");
-    result->push_back(titleRow);
+    int maxTitleWidth = 0;
+    for (const auto &item : classMap) {
+        maxTitleWidth = std::max(maxTitleWidth, static_cast<int>(item.first.length()));
+    }
+    maxTitleWidth = std::max(maxTitleWidth, static_cast<int>(strlen("AnonPage other")));
+    TITLE_WIDTH_ = maxTitleWidth;
 
-    AppendMetricRow(result, "VmPeak", GetProcValue(pid, "VmPeak"));
-    AppendMetricRow(result, "VmSize", GetProcValue(pid, "VmSize"));
-    AppendMetricRow(result, "VmRSS", GetProcValue(pid, "VmRSS"));
-    AppendMetricRow(result, "RssAnon", GetProcValue(pid, "RssAnon"));
-    AppendMetricRow(result, "RssFile", GetProcValue(pid, "RssFile"));
-    AppendMetricRow(result, "RssShmem", GetProcValue(pid, "RssShmem"));
-    AppendMetricRow(result, "VmData", GetProcValue(pid, "VmData"));
-    AppendMetricRow(result, "VmSwap", GetProcValue(pid, "VmSwap"));
-
-    AppendMetricRow(result, "Rss(total)", summary.rss);
-    AppendMetricRow(result, "Pss(total)", summary.pss);
-    AppendMetricRow(result, "Private_Clean", summary.privateClean);
-    AppendMetricRow(result, "Private_Dirty", summary.privateDirty);
-    AppendMetricRow(result, "Shared_Clean", summary.sharedClean);
-    AppendMetricRow(result, "Shared_Dirty", summary.sharedDirty);
-    AppendMetricRow(result, "Swap", summary.swap);
-    AppendMetricRow(result, "SwapPss", summary.swapPss);
+    InsertMemoryTitle(result);
+    for (const auto &classStr : MEMORY_PRINT_ORDER_VEC) {
+        auto it = classMap.find(classStr);
+        if (it != classMap.end()) {
+            SetClassRow(classStr, it->second, result);
+        }
+    }
+    auto fileIt = classMap.find("FilePage other");
+    SetClassRow("FilePage other", fileIt != classMap.end() ? fileIt->second : ClassSummary(), result);
+    SetTotalRow(total, result);
 
     GetPurgByPid(pid, result);
-    GetAshmem(pid, result, showAshmem);
-    GetDmaBuf(pid, result, showDmaBuf);
-    GetGpumem(pid, result, showGpumem);
+    GetDma(totalGraph_, result);
     return true;
 }
+
+void MemoryInfo::InsertMemoryTitle(StringMatrix result)
+{
+    vector<string> line1;
+    vector<string> line2;
+    vector<string> line3;
+    vector<string> line4;
+
+    string space = " ";
+    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, space);
+
+    string separator = "-";
+    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, separator);
+
+    string unit = "(" + MemoryUtil::GetInstance().KB_UNIT_ + " )";
+    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, unit);
+
+    line1.push_back(space + BLANK_);
+    line2.push_back(space + BLANK_);
+    line3.push_back(space + BLANK_);
+    line4.push_back(space);
+
+    for (string str : MemoryFilter::GetInstance().TITLE_HAS_PID_) {
+        vector<string> types;
+        StringUtils::GetInstance().StringSplit(str, "_", types);
+        if (types.size() == TYPE_SIZE) {
+            string title1 = types.at(0);
+            StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, title1);
+            line1.push_back(title1 + BLANK_);
+
+            string title2 = types.at(1);
+            StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, title2);
+            line2.push_back(title2 + BLANK_);
+            line3.push_back(unit + BLANK_);
+            line4.push_back(separator + SEPARATOR_);
+        }
+    }
+    result->push_back(line1);
+    result->push_back(line2);
+    result->push_back(line3);
+    result->push_back(line4);
+}
+
+void MemoryInfo::SetValueForRet(const std::string &value, vector<string> &tempResult)
+{
+    std::string tempStr = value;
+    StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, tempStr);
+    tempResult.push_back(tempStr + BLANK_);
+}
+
+void MemoryInfo::SetClassRow(const std::string &classStr, const ClassSummary &summary, StringMatrix result)
+{
+    vector<string> tempResult;
+    string tempTitle = classStr;
+    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, tempTitle);
+    tempResult.push_back(tempTitle + BLANK_);
+    SetValueForRet(to_string(summary.pss), tempResult);
+    SetValueForRet(to_string(summary.sharedClean), tempResult);
+    SetValueForRet(to_string(summary.sharedDirty), tempResult);
+    SetValueForRet(to_string(summary.privateClean), tempResult);
+    SetValueForRet(to_string(summary.privateDirty), tempResult);
+    SetValueForRet(to_string(summary.swap), tempResult);
+    SetValueForRet(to_string(summary.swapPss), tempResult);
+    SetValueForRet("0", tempResult);
+    SetValueForRet("0", tempResult);
+    SetValueForRet("0", tempResult);
+    result->push_back(tempResult);
+}
+
+void MemoryInfo::SetTotalRow(const ClassSummary &total, StringMatrix result)
+{
+    vector<string> lines;
+    vector<string> values;
+    string totalTitle = "Total";
+    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, BLANK_, false, totalTitle);
+    values.push_back(totalTitle + BLANK_);
+
+    string separator = "-";
+    StringUtils::GetInstance().SetWidth(TITLE_WIDTH_, SEPARATOR_, false, separator);
+    lines.push_back(separator + SEPARATOR_);
+
+    const std::vector<uint64_t> totalValues = {total.pss, total.sharedClean, total.sharedDirty,
+        total.privateClean, total.privateDirty, total.swap, total.swapPss, 0, 0, 0};
+    for (const auto &value : totalValues) {
+        string sep = "-";
+        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, sep);
+        lines.push_back(sep + SEPARATOR_);
+        string tempValue = to_string(value);
+        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, BLANK_, false, tempValue);
+        values.push_back(tempValue + BLANK_);
+    }
+    if (!lines.empty()) {
+        lines.pop_back();
+        string lastSep = "-";
+        StringUtils::GetInstance().SetWidth(LINE_WIDTH_, SEPARATOR_, false, lastSep);
+        lines.push_back(lastSep);
+    }
+    result->push_back(lines);
+    result->push_back(values);
+}
+
+
+
+
+void MemoryInfo::GetDma(const uint64_t &dmaValue, StringMatrix result)
+{
+    AddBlankLine(result);
+    vector<string> title;
+    title.push_back(MemoryFilter::GetInstance().DMA_TAG + ":");
+    result->push_back(title);
+
+    vector<string> dma;
+    string dmaTitle = MemoryFilter::GetInstance().DMA_OUT_LABEL + ":";
+    StringUtils::GetInstance().SetWidth(RAM_WIDTH_, BLANK_, false, dmaTitle);
+    dma.push_back(dmaTitle);
+    dma.push_back(to_string(dmaValue) + MemoryUtil::GetInstance().KB_UNIT_);
+    result->push_back(dma);
+}
+
+
+
 
 string MemoryInfo::AddKbUnit(const uint64_t &value) const
 {
@@ -588,95 +728,8 @@ void MemoryInfo::GetPurgByPid(const int32_t &pid, StringMatrix result)
     result->push_back(purgPin);
 }
 
-void MemoryInfo::GetAshmem(const int32_t &pid, StringMatrix result, bool showAshmem)
-{
-    std::pair<int, std::vector<std::string>> ashmemInfo;
-    unique_ptr<ParseAshmemInfo> parseAshmeminfo = make_unique<ParseAshmemInfo>();
-    if (!parseAshmeminfo->GetAshmemInfo(pid, ashmemInfo)) {
-        DUMPER_HILOGE(MODULE_SERVICE, "GetAshmemInfo error");
-        return;
-    }
-    if (ashmemInfo.second.size() == 0) {
-        DUMPER_HILOGE(MODULE_SERVICE, "no detail ashmem info.");
-        return;
-    }
-    AddBlankLine(result);
-    vector<string> title;
-    title.push_back("Ashmem:");
-    result->push_back(title);
-    vector<string> totalAshmemVec;
-    totalAshmemVec.push_back("Total Ashmem:" + to_string(ashmemInfo.first) + MemoryUtil::GetInstance().KB_UNIT_);
-    result->push_back(totalAshmemVec);
-    if (showAshmem) {
-        for (auto detailInfo : ashmemInfo.second) {
-            vector<string> tempResult;
-            tempResult.push_back(detailInfo);
-            result->push_back(tempResult);
-        }
-    }
-}
 
-bool MemoryInfo::GetDmaBuf(const int32_t &pid, StringMatrix result, bool showDmaBuf)
-{
-    if (!showDmaBuf) {
-        DUMPER_HILOGD(MODULE_SERVICE, "showDmaBuf is false, skip GetDmaBuf");
-        return false;
-    }
-    const std::vector<std::string> showTitles = { "Process", "pid", "fd", "size_bytes", "ino", "exp_pid",
-        "exp_task_comm", "buf_name", "exp_name", "buf_type", "leak_type" };
-    return GetDmaBufByProc(pid, result, showTitles);
-}
-bool MemoryInfo::GetGpumem(const int32_t &pid, StringMatrix result, bool showGpumem)
-{
-    if (!showGpumem) {
-        DUMPER_HILOGD(MODULE_SERVICE, "showGpumem is false, skip GetGpumem");
-        return false;
-    }
-    AddBlankLine(result);
-    std::vector<std::string> hint;
-    hint.push_back("Error [RUNTIME]: gpumem plugin is not loaded; --show-gpumem is unavailable.");
-    result->push_back(hint);
-    DUMPER_HILOGE(MODULE_SERVICE, "CollectGpumem returns empty, gpumem plugin not loaded");
-    return false;
-    return true;
-}
 
-bool MemoryInfo::GetDmaBufByProc(const int32_t &pid, StringMatrix result, const std::vector<std::string>& showTitles)
-{
-    int32_t uid = GetProcUid(pid);
-    if (uid < APP_UID) {
-        DUMPER_HILOGD(MODULE_SERVICE, "Uid Verification failed for uid: %{public}d", uid);
-        return false;
-    }
-    std::vector<std::string> dmabufInfo;
-    std::vector<std::string> titles;
-    std::unordered_map<std::string, int> headerMap;
-    std::vector<int> columnWidths;
-    unique_ptr<ParseDmaBufInfo> parseDmaBufInfo = make_unique<ParseDmaBufInfo>();
-    if (!parseDmaBufInfo->GetDmaBufInfo(pid, dmabufInfo, headerMap, columnWidths, titles)) {
-        DUMPER_HILOGE(MODULE_SERVICE, "GetDmaBufInfo error");
-        return false;
-    }
-    for (const auto& dmabuf : dmabufInfo) {
-        std::istringstream ss(dmabuf);
-        std::ostringstream oss;
-        for (const auto& title : titles) {
-            std::string value;
-            if (!(ss >> value)) {
-                value = "NULL";
-            }
-            if (std::find(showTitles.begin(), showTitles.end(), title) == showTitles.end()) {
-                continue;
-            }
-            int width = std::min(columnWidths[headerMap[title]], DMABUF_MAX_WIDTH);
-            oss << std::left << std::setw(width + LINE_SPACING) << value << END_BLANK;
-        }
-        vector<string> tempResult;
-        tempResult.push_back(oss.str());
-        result->push_back(tempResult);
-    }
-    return true;
-}
 
 void MemoryInfo::GetRamCategory(const GroupMap &smapsInfos, const ValueMap &meminfos, StringMatrix result)
 {

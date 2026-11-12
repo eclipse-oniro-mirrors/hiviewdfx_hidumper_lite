@@ -21,21 +21,22 @@
 #include <string>
 #include <unistd.h>
 
-#include "data_inventory.h"
 #include "dump_common_utils.h"
 #include "dump_manager_service.h"
 #include "file_ex.h"
 #include "string_ex.h"
-#include "task/base/task_enable_config.h"
 #include "unique_fd.h"
 
 using namespace OHOS::HiviewDFX;
 using OHOS::IsNumericStr;
+using OHOS::LoadStringFromFile;
 using OHOS::StrToInt;
+using OHOS::TrimStr;
+using OHOS::IsSubStr;
+using OHOS::ReplaceStr;
 using OHOS::SaveStringToFd;
 
 namespace {
-const std::string TEST_CONFIG_PATH = "/storage/hidumper_lite_task_enable_test.json";
 
 int RunHidumperCmd(std::initializer_list<const char *> args, std::string &out)
 {
@@ -82,7 +83,20 @@ TEST(LiteUtilsTest, StringEx)
     EXPECT_EQ(value, 123);
     EXPECT_FALSE(StrToInt("", value));
     EXPECT_FALSE(StrToInt("12a", value));
-    EXPECT_FALSE(StrToInt("2147483648", value));}
+    EXPECT_FALSE(StrToInt("2147483648", value));
+    EXPECT_TRUE(StrToInt("-45", value));
+    EXPECT_EQ(value, -45);
+    EXPECT_TRUE(StrToInt("2147483647", value));
+    EXPECT_FALSE(StrToInt("-2147483649", value));
+    EXPECT_TRUE(StrToInt("+5", value));
+    EXPECT_EQ(value, 5);
+    EXPECT_TRUE(StrToInt(" 7", value));
+    EXPECT_EQ(value, 7);
+    EXPECT_TRUE(IsSubStr("abcdef", "cd"));
+    EXPECT_FALSE(IsSubStr("abc", "abcd"));
+    EXPECT_EQ(ReplaceStr("a-b-c", "-", "+"), "a+b+c");
+    EXPECT_EQ(ReplaceStr("aaa", "a", "bb"), "bbbbbb");
+}
 
 /**
  * @tc.name: LiteUtilsUniqueFd001
@@ -130,6 +144,50 @@ TEST(LiteUtilsTest, FileEx)
 }
 
 /**
+ * @tc.name: LiteUtilsTrimStr001
+ * @tc.type: FUNC
+ */
+TEST(LiteUtilsTest, TrimStrBranches)
+{
+    EXPECT_EQ(TrimStr("  x  "), "x");
+    EXPECT_EQ(TrimStr("   "), "");
+    EXPECT_EQ(TrimStr(""), "");
+    EXPECT_EQ(TrimStr("y"), "y");
+    EXPECT_EQ(TrimStr("xxaxx", 'x'), "a");
+    EXPECT_EQ(TrimStr("xxx", 'x'), "");
+}
+
+/**
+ * @tc.name: LiteUtilsSplitStr001
+ * @tc.type: FUNC
+ */
+TEST(LiteUtilsTest, SplitStrBranches)
+{
+    std::vector<std::string> out;
+    OHOS::SplitStr("a, b,,c", ",", out);
+    EXPECT_EQ(out.size(), 3U);
+    EXPECT_EQ(out[0], "a");
+    EXPECT_EQ(out[1], "b");
+    EXPECT_EQ(out[2], "c");
+
+    OHOS::SplitStr("a,,b", ",", out, true);
+    EXPECT_EQ(out.size(), 3U);
+    EXPECT_TRUE(out[1].empty());
+
+    OHOS::SplitStr("abc", "", out, false);
+    EXPECT_EQ(out.size(), 1U);
+    EXPECT_EQ(out[0], "abc");
+
+    OHOS::SplitStr("", ",", out, false);
+    EXPECT_TRUE(out.empty());
+
+    OHOS::SplitStr(",", ",", out, true);
+    EXPECT_EQ(out.size(), 2U);
+    EXPECT_TRUE(out[0].empty());
+    EXPECT_TRUE(out[1].empty());
+}
+
+/**
  * @tc.name: DumpCommonUtils001
  * @tc.type: FUNC
  */
@@ -148,50 +206,6 @@ TEST(DumpCommonUtilsTest, PidsAndTime)
     std::string dateTime;
     DumpCommonUtils::GetDateAndTime(DumpCommonUtils::GetMilliseconds() / 1000, dateTime);
     EXPECT_FALSE(dateTime.empty());
-}
-
-/**
- * @tc.name: DataInventory001
- * @tc.type: FUNC
- */
-TEST(DataInventoryTest, InjectGetRemove)
-{
-    DataInventory inventory;
-    auto data = std::make_shared<std::vector<std::string>>(std::vector<std::string>{"a", "b"});
-    EXPECT_TRUE(inventory.Inject(DataId::CPU_FREQ_INFO, data));
-    auto ptr = inventory.GetPtr<std::vector<std::string>>(DataId::CPU_FREQ_INFO);
-    ASSERT_NE(ptr, nullptr);
-    EXPECT_EQ(ptr->size(), 2U);
-    EXPECT_EQ((*ptr)[0], "a");
-
-    EXPECT_FALSE(inventory.Inject(DataId::CPU_FREQ_INFO, data));
-    EXPECT_EQ(inventory.Size(), 1U);
-
-    inventory.RemoveRestData(std::set<DataId>{DataId::CPU_FREQ_INFO});
-    EXPECT_EQ(inventory.Size(), 1U);
-    inventory.RemoveRestData(std::set<DataId>{});
-    EXPECT_EQ(inventory.Size(), 0U);
-    EXPECT_EQ(inventory.GetPtr<std::vector<std::string>>(DataId::CPU_FREQ_INFO), nullptr);
-}
-
-/**
- * @tc.name: TaskEnableConfig001
- * @tc.type: FUNC
- */
-TEST(TaskEnableConfigTest, ParseAndDefault)
-{
-    const std::string config = "{\"version\":\"1.0.0\",\"task_configs\":{"
-        "\"TEST_KEEP_CPU_FREQ\":{\"task_id\":8,\"enabled\":true},"
-        "\"TEST_DISABLE_KERNEL_MEM\":{\"task_id\":10004,\"enabled\":false}}}";
-    {
-        std::ofstream file(TEST_CONFIG_PATH);
-        file << config;
-    }
-    EXPECT_EQ(TaskEnableConfig::GetInstance().LoadFromConfig(TEST_CONFIG_PATH), DumpStatus::DUMP_OK);
-    EXPECT_TRUE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::DUMP_CPU_FREQ_INFO));
-    EXPECT_FALSE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::WRITE_KERNEL_MEM_INFO));
-    EXPECT_TRUE(TaskEnableConfig::GetInstance().IsTaskEnabled(TaskId::WRITE_CPU_FREQ_INFO));
-    EXPECT_EQ(0, remove(TEST_CONFIG_PATH.c_str()));
 }
 
 /**
@@ -247,11 +261,15 @@ TEST(HidumperCmdTest, MemByPid)
     std::string out;
     int ret = RunHidumperCmd({"hidumper", "--mem", pidStr.c_str()}, out);
     EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
-    EXPECT_NE(out.find("Process Memory Information :"), std::string::npos);
-    EXPECT_NE(out.find("VmPeak:"), std::string::npos);
-    EXPECT_NE(out.find("VmRSS:"), std::string::npos);
-    EXPECT_NE(out.find("Rss(total):"), std::string::npos);
-    EXPECT_NE(out.find("Pss(total):"), std::string::npos);
+    EXPECT_NE(out.find("Pss"), std::string::npos);
+    EXPECT_NE(out.find("Total"), std::string::npos);
+    EXPECT_NE(out.find("Heap"), std::string::npos);
+    EXPECT_NE(out.find("Free"), std::string::npos);
+    EXPECT_NE(out.find("Shared"), std::string::npos);
+    EXPECT_NE(out.find("Clean"), std::string::npos);
+    EXPECT_NE(out.find("( kB )"), std::string::npos);
+    EXPECT_NE(out.find("native heap"), std::string::npos);
+    EXPECT_NE(out.find("Purgeable:"), std::string::npos);
 }
 
 /**
@@ -291,4 +309,118 @@ TEST(HidumperCmdTest, ProcessesList)
     int ret = RunHidumperCmd({"hidumper", "-p"}, out);
     EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
     EXPECT_NE(out.find("cmd is: ps -efT"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdProcessesPid001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, ProcessesListByPid)
+{
+    if (access("/bin/ps", X_OK) != 0) {
+        SUCCEED() << "skip: ps not available";
+        return;
+    }
+    std::string pidStr = std::to_string(getpid());
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "-p", pidStr.c_str()}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
+    EXPECT_NE(out.find("cmd is: ps -efT -p " + pidStr), std::string::npos);
+    EXPECT_NE(out.find("/proc/" + pidStr + "/wchan"), std::string::npos);
+    EXPECT_NE(out.find("/proc/" + pidStr + "/mountinfo"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdCpuUsagePid001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, CpuUsageByPid)
+{
+    std::string pidStr = std::to_string(getpid());
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--cpuusage", pidStr.c_str()}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
+    EXPECT_NE(out.find("Load average:"), std::string::npos);
+    EXPECT_NE(out.find("Details of Processes:"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdMemOverview001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, MemOverview)
+{
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem"}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
+    EXPECT_NE(out.find("Total Memory Usage by PID:"), std::string::npos);
+    EXPECT_NE(out.find("Total RAM:"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdMemTableConsistency001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, MemTableConsistency)
+{
+    std::string pidStr = std::to_string(getpid());
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem", pidStr.c_str()}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_OK));
+    EXPECT_NE(out.find("Pss"), std::string::npos);
+    EXPECT_NE(out.find("( kB )"), std::string::npos);
+    EXPECT_NE(out.find("Heap"), std::string::npos);
+    EXPECT_NE(out.find("SwapPss"), std::string::npos);
+    EXPECT_NE(out.find("DMA:"), std::string::npos);
+    EXPECT_NE(out.find("Total"), std::string::npos);
+    EXPECT_NE(out.find("FilePage other"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdHelpContent001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, HelpContent)
+{
+    std::string out;
+    RunHidumperCmd({"hidumper", "-h"}, out);
+    EXPECT_NE(out.find("|help text for the tool"), std::string::npos);
+    EXPECT_NE(out.find("--cpufreq"), std::string::npos);
+    EXPECT_NE(out.find("--cpuusage"), std::string::npos);
+    EXPECT_NE(out.find("--mem"), std::string::npos);
+    EXPECT_NE(out.find("-p"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdInvalidMemArg001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, InvalidMemArg)
+{
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem", "not-a-pid"}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_INVALID_ARG));
+    EXPECT_NE(out.find("hidumper:"), std::string::npos);
+}
+
+/**
+ * @tc.name: HidumperCmdInvalidPid001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, InvalidPidArg)
+{
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "-p", "999999"}, out);
+    EXPECT_NE(ret, static_cast<int>(DumpStatus::DUMP_OK));
+}
+
+/**
+ * @tc.name: HidumperCmdMemNonexistentPid001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, MemNonexistentPid)
+{
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem", "999999"}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_FAIL));
 }

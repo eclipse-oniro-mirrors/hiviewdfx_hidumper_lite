@@ -28,8 +28,6 @@
 #include "util/string_utils.h"
 #include "common/dumper_constant.h"
 #include "securec.h"
-#include "manager/dump_manager.h"
-#include "manager/dump_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -69,20 +67,7 @@ DumpStatus DumpImplement::Main(int argc, char *argv[], const std::shared_ptr<Raw
 
     const DumperOpts &opts = ptrDumperParameter->GetOpts();
     DumpStatus finalRet = DumpStatus::DUMP_OK;
-    if (opts.isDumpCpuFreq_) {
-        int outFd = dup(reqCtl->GetOutputFd());
-        if (outFd < 0) {
-            DUMPER_HILOGE(MODULE_COMMON, "dup output fd failed");
-            finalRet = DumpStatus::DUMP_FAIL;
-        } else {
-            DumpContext context = DumpContext(reqCtl->GetUid(), reqCtl->GetPid(), outFd);
-            DumpStatus newRet = DumpManager::GetInstance().StartDump(argc, argv, context);
-            if (newRet != DumpStatus::DUMP_OK) {
-                finalRet = newRet;
-            }
-        }
-    }
-    if (opts.isDumpCpuUsage_ || opts.isDumpMem_ || opts.isDumpProcesses_) {
+    if (opts.isDumpCpuFreq_ || opts.isDumpCpuUsage_ || opts.isDumpMem_ || opts.isDumpProcesses_) {
         std::vector<std::shared_ptr<DumpCfg>> &configs = ptrDumperParameter->GetExecutorConfigList();
         DUMPER_HILOGD(MODULE_COMMON, "debug|Main configs size is %{public}zu", configs.size());
         if (configs.size() == 0) {
@@ -348,15 +333,15 @@ void DumpImplement::CmdHelp()
 {
     const std::string commonUsageStr =
         "usage:\n"
-        "  -h                          |help text for the tool\n"
-        "  -p                          |dump all processes information\n"
-        "  -p [pid]                    |dump information of specified process and its threads\n"
-        "  --cpuusage                  |dump system cpu usage of each core\n"
-        "  --cpuusage [pid]            |dump cpu usage of threads under specified pid\n"
-        "  --cpufreq                   |dump real CPU frequency of each core\n"
-        "  --mem                       |dump memory usage of total\n"
-        "  --mem [pid]                 |dump memory usage of specified pid\n"
-        "  --mem --prune               |dump simplified memory information\n"
+        "  -h                             |help text for the tool\n"
+        "  -p                             |dump all processes information\n"
+        "  -p [pid]                       |dump information of specified process and its threads\n"
+        "  --cpuusage                     |dump system cpu usage of each core\n"
+        "  --cpuusage [pid]               |dump cpu usage of threads under specified pid\n"
+        "  --cpufreq                      |dump real CPU frequency of each core\n"
+        "  --mem                          |dump memory usage of total\n"
+        "  --mem [pid]                    |dump memory usage of specified pid\n"
+        "  --mem --prune                  |dump simplified memory information\n"
         "  --mem [pid] -t [timeInterval]  |dump process memory change information, press Ctrl+C to stop the export."
         " detail information is stored in /data/log/hidumper/record_mem.txt.\n";
 

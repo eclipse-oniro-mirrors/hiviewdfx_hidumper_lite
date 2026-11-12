@@ -76,7 +76,7 @@ DumpStatus MemoryDumper::Execute()
 
 void MemoryDumper::GetMemByPid()
 {
-    int ret = GetMemoryInfoByPid(pid_, dumpDatas_, false, false, false);
+    int ret = GetMemoryInfoByPid(pid_, dumpDatas_);
     if (ret == 0) {
         status_ = DumpStatus::DUMP_OK;
     } else {

@@ -25,6 +25,17 @@
 #include "time.h"
 namespace OHOS {
 namespace HiviewDFX {
+
+struct ClassSummary {
+    uint64_t pss = 0;
+    uint64_t sharedClean = 0;
+    uint64_t sharedDirty = 0;
+    uint64_t privateClean = 0;
+    uint64_t privateDirty = 0;
+    uint64_t swap = 0;
+    uint64_t swapPss = 0;
+};
+
 namespace {
 inline static const std::string MEMINFO_PSS = "Pss";
 inline static const std::string MEMINFO_SHARED_CLEAN = "Shared_Clean";
@@ -55,7 +66,12 @@ public:
     using PageType = std::vector<std::pair<std::string, uint64_t>>;
     using PageTypePair = std::pair<PageType, PageType>;
 
-    bool GetMemoryInfoByPid(const int32_t &pid, StringMatrix result, bool showAshmem, bool showDmaBuf, bool showGpumem);
+    bool GetMemoryInfoByPid(const int32_t &pid, StringMatrix result);
+    void InsertMemoryTitle(StringMatrix result);
+    void SetValueForRet(const std::string &value, std::vector<std::string> &tempResult);
+    void SetClassRow(const std::string &classStr, const ClassSummary &summary, StringMatrix result);
+    void SetTotalRow(const ClassSummary &total, StringMatrix result);
+    void GetDma(const uint64_t &dmaValue, StringMatrix result);
     void GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const int32_t &timeInterval);
     void SetReceivedSigInt(bool isReceivedSigInt);
     DumpStatus GetMemoryInfoNoPid(int fd, StringMatrix result);
@@ -71,6 +87,11 @@ private:
     };
     int rawParamFd_ = 0;
     const int LINE_WIDTH_ = 14;
+    const std::vector<std::string> MEMORY_PRINT_ORDER_VEC = {
+        "ark ts heap", "arkts-static heap", "guard", "native heap", ".hap", "AnonPage other",
+        "stack", ".db", ".so", "dev", "dmabuf", ".ttf", "jsvm heap", "arkweb-js heap", "arkweb-pa heap",
+        "kotlin heap", "rn-hermes heap", "dart heap"
+    };
     int TITLE_WIDTH_ = 17;
     const int RAM_WIDTH_ = 16;
     const size_t TYPE_SIZE = 2;
@@ -149,10 +170,6 @@ private:
     void SetHeapAlloc(MemInfoData::MemInfo &meminfo, uint64_t value);
     void SetHeapFree(MemInfoData::MemInfo &meminfo, uint64_t value);
 
-    void GetAshmem(const int32_t &pid, StringMatrix result, bool showAshmem);
-    bool GetDmaBuf(const int32_t &pid, StringMatrix result, bool showDmaBuf);
-    bool GetGpumem(const int32_t &pid, StringMatrix result, bool showGpumem);
-    bool GetDmaBufByProc(const int32_t &pid, StringMatrix result, const std::vector<std::string>& showTitles);
     int CalculateStars(const std::vector<int>& pssValues, int currentPSS);
     void WriteStdout(const std::string& s);
     void ClearPreviousLines(int lineCount);

@@ -61,6 +61,7 @@ DumpStatus ConfigUtils::GetDumperConfigs()
     currentPidInfo_.Reset();
     currentPidInfos_.clear();
 
+    HandleDumpCpuFreq(dumpCfgs); // cpuid
     HandleDumpCpuUsage(dumpCfgs); // pid
     HandleDumpMem(dumpCfgs);
     HandleDumpProcesses(dumpCfgs);
@@ -85,6 +86,21 @@ bool ConfigUtils::MergePidInfos(std::vector<DumpCommonUtils::PidInfo> &pidInfos,
             pidInfos.push_back(currentPidInfo_);
         }
     }
+    return true;
+}
+
+bool ConfigUtils::HandleDumpCpuFreq(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs)
+{
+    const DumperOpts &dumperOpts = dumperParam_->GetOpts();
+    if (!dumperOpts.isDumpCpuFreq_) {
+        return false;
+    }
+    currentPidInfo_.Reset();
+    currentPidInfos_.clear();
+    std::shared_ptr<OptionArgs> args;
+    GetConfig(CONFIG_GROUP_CPU_FREQ, dumpCfgs, args);
+    currentPidInfos_.clear();
+    currentPidInfo_.Reset();
     return true;
 }
 

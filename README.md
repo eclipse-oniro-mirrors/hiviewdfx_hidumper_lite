@@ -24,11 +24,11 @@ The source code directory structure is as follows:
 │   ├── hidumper.c                          #kernel-mode implementation (CPU/memory/task info export)
 │   └── hidumper.h                          #public entry declaration
 └── small                                   #small system (Linux kernel) implementation
-    ├── client                              #command line entry
-    ├── frameworks                          #dump framework (executor chain and task framework)
+    ├── client                              #command line entry (main.cpp, with Ctrl+C signal handling for timed monitoring)
+    ├── frameworks                          #dump framework (config chain + executor chain + memory parsers)
     ├── interfaces                          #inner interface files
     ├── services                            #service layer (single process, no SA/IPC)
-    ├── test                                #unit test cases
+    ├── test                                #unit test cases (21 cases, built with debug images by default)
     └── utils                               #common utilities (including lite-system dependency shims)
 ```
 
@@ -53,7 +53,7 @@ On small systems with the Linux kernel, HiDumper provides a unified system infor
 
 -   hidumper, the executable program of the HiDumper tool, which receives user input and executes the dump flow directly in a single process.
 -   DumpManager/DumpImplement, the manager of HiDumper, which provides functions such as information classification, command request distribution, and information collection.
--   Dumpers, exporters of various information, including process information export, CPU usage export, CPU frequency export, and memory usage export.
+-   Dumpers, exporters of various information, including process information export, CPU usage export, CPU frequency export (cat kernel cpufreq nodes), and memory usage export.
 -   Output, content output, mainly FdOutput which outputs to standard output or a file descriptor.
 
 **Figure 1**  Architecture of hidumper_lite
@@ -94,19 +94,19 @@ The procedure is as follows:
     hidumper --cpuusage 1024
     ```
 
-6.  Run the **hidumper --cpufreq** command to obtain the actual operating frequency of each CPU core. This command depends on the kernel cpufreq framework and a cpufreq driver (it reads nodes under `/sys/devices/system/cpu/cpu<N>/cpufreq/`); if the kernel does not provide them, the command exits gracefully.
+6.  Run the **hidumper --cpufreq** command to obtain the actual operating frequency of each CPU core. The implementation matches the standard system (config chain + cat of kernel nodes `/sys/devices/system/cpu/cpu<N>/cpufreq/cpuinfo_cur_freq`/`cpuinfo_max_freq`); if the kernel does not provide a cpufreq driver, the command exits gracefully.
 
     ```
     hidumper --cpufreq
     ```
 
-7.  Run the **hidumper --mem** command to obtain the memory usage of the system.
+7.  Run the **hidumper --mem** command to obtain the memory usage of the system. The output includes the per-process memory table (Total Memory Usage by PID), the per-category PSS summary (Total Pss by Category), and Total/Free/Used/Lost RAM statistics.
 
     ```
     hidumper --mem
     ```
 
-8.  Run the **hidumper --mem 1024** command to obtain the memory usage of the process whose PID is 1024.
+8.  Run the **hidumper --mem 1024** command to obtain the memory usage of the process whose PID is 1024. The output is a standard-system-style multi-column table: a four-line header (Pss Total / Shared Clean / Shared Dirty / Private Clean / Private Dirty / Swap / SwapPss / Heap Size / Heap Alloc / Heap Free), per-memory-class aggregated rows (native heap, .so, stack, .ttf, dev, etc.), followed by a Total summary row, a Purgeable section and a DMA section.
 
     ```
     hidumper --mem 1024
@@ -124,7 +124,7 @@ The procedure is as follows:
     hidumper --mem 1 -t 1
     ```
 
-**Figure 2**  Unit test result on the small-system board (13 tests passed)
+**Figure 2**  Unit test result on the small-system board (21 test cases in total)
 
 ![](figures/en-us_image_0000001121989181.PNG)
 

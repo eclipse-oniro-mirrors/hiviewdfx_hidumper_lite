@@ -16,12 +16,7 @@ import("../../hidumper.gni")
 config("hidumper_include") {
   include_dirs = [
     ".",
-    "${hidumper_frameworks_path}/data_inventory",
-    "${hidumper_frameworks_path}/dump_strategy",
     "${hidumper_frameworks_path}/include",
-    "${hidumper_frameworks_path}/manager",
-    "${hidumper_frameworks_path}/task",
-    "${hidumper_frameworks_path}/utils",
     "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
   ]
 }
@@ -39,7 +34,6 @@ ohos_source_set("dump_main") {
     "src/executor/file_stream_dumper.cpp",
     "src/executor/fd_output.cpp",
     "src/executor/hidumper_executor.cpp",
-    "src/executor/memory/dma_info.cpp",
     "src/executor/memory/get_cma_info.cpp",
     "src/executor/memory/get_hardware_info.cpp",
     "src/executor/memory/get_heap_info.cpp",
@@ -50,13 +44,10 @@ ohos_source_set("dump_main") {
     "src/executor/memory/memory_info.cpp",
     "src/executor/memory/memory_info_wrapper.cpp",
     "src/executor/memory/memory_util.cpp",
-    "src/executor/memory/parse/parse_ashmem_info.cpp",
-    "src/executor/memory/parse/parse_dmabuf_info.cpp",
     "src/executor/memory/parse/parse_meminfo.cpp",
     "src/executor/memory/parse/parse_smaps_info.cpp",
     "src/executor/memory/parse/parse_smaps_rollup_info.cpp",
     "src/executor/memory/parse/parse_vmallocinfo.cpp",
-    "src/executor/memory/smaps_memory_info.cpp",
     "src/executor/memory_dumper.cpp",
     "src/factory/cmd_dumper_factory.cpp",
     "src/factory/cpu_dumper_factory.cpp",
@@ -90,39 +81,6 @@ ohos_source_set("dump_main") {
   part_name = "${hidumper_part_name}"
 }
 
-ohos_source_set("dump_framework") {
-  sources = [
-    "data_inventory/data_inventory.cpp",
-    "dump_strategy/dump_strategy_factory.cpp",
-    "manager/cmd_parse.cpp",
-    "manager/dump_manager.cpp",
-    "task/base/task_control.cpp",
-    "task/base/task_enable_config.cpp",
-    "task/base/task_register.cpp",
-    "task/cpu/cpu_freq_info_task.cpp",
-    "task/writer/cpu_freq_info_writer.cpp",
-    "task/writer/kernel_mem_info_writer.cpp",
-    "utils/writer_utils.cpp",
-  ]
-
-  configs = [
-    "${hidumper_utils_path}:utils_config",
-    "${hidumper_service_path}:interface_include",
-    ":hidumper_include",
-  ]
-
-  deps = [ "${hidumper_utils_path}:utils" ]
-
-
-  external_deps = [
-    "bounds_checking_function:libsec_shared",
-    "hilog_lite:hilog_shared",
-  ]
-
-  subsystem_name = "${hidumper_subsystem_name}"
-  part_name = "${hidumper_part_name}"
-}
-
 ohos_executable("hidumper") {
   install_enable = true
 
@@ -137,7 +95,6 @@ ohos_executable("hidumper") {
   ]
 
   deps = [
-    ":dump_framework",
     ":dump_main",
     "${hidumper_service_path}:hidumperservice_source",
     "${hidumper_utils_path}:utils",

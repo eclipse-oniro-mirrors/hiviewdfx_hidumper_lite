@@ -17,7 +17,6 @@ import("hidumper.gni")
 group("hidumper_small") {
   deps = [
     "frameworks/native:hidumper",
-    "services:task_enable_config",
   ]
 }
 

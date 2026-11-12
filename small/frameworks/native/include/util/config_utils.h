@@ -34,6 +34,7 @@ public:
 private:
     DumpStatus GetDumperConfigs();
     bool MergePidInfos(std::vector<DumpCommonUtils::PidInfo> &outInfos, int pid);
+    bool HandleDumpCpuFreq(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     bool HandleDumpCpuUsage(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     bool HandleDumpMem(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);
     bool HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dumpCfgs);

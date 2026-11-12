@@ -49,8 +49,6 @@ public:
 
     bool GetInfo(const MemoryFilter::MemoryType &memType, const int &pid, GroupMap &nativeMap, GroupMap &result);
     // countSameNameMemMap---key: name, value: MemoryData
-    bool GetSmapsData(const int &pid, bool isShowSmapsAddress,
-        std::map<std::string, MemoryData>& countSameNameMemMap, std::vector<MemoryData>& showAddressMemInfoVec);
 
 private:
     std::string memGroup_ = "";

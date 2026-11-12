@@ -25,6 +25,7 @@ const std::string ConfigData::CONFIG_MINIGROUP_ = ConfigData::CONFIG_MINIGROUP +
 const std::string ConfigData::CONFIG_DUMPER = "dumper";
 const std::string ConfigData::CONFIG_DUMPER_ = ConfigData::CONFIG_DUMPER + ConfigData::CONFIG_NAME_SPLIT;
 const std::string ConfigData::CONFIG_GROUP_CPU_USAGE = ConfigData::CONFIG_GROUP_ + "cpuusage";
+const std::string ConfigData::CONFIG_GROUP_CPU_FREQ = ConfigData::CONFIG_GROUP_ + "cpufreq";
 const std::string ConfigData::CONFIG_GROUP_MEMORY = ConfigData::CONFIG_GROUP_ + "memory";
 const std::string ConfigData::CONFIG_GROUP_PROCESSES = ConfigData::CONFIG_GROUP_ + "processes";
 const std::string ConfigData::CONFIG_GROUP_PROCESSES_PID = ConfigData::CONFIG_GROUP_ + "pid_processes";
@@ -119,6 +120,25 @@ const ConfigData::ItemCfg ConfigData::mapDumper_[] = {
     },
 };
 
+const ConfigData::ItemCfg ConfigData::cpuFreqDumper_[] = {
+    {
+        "dumper_cpu_freq", "CPU Frequency", "cat /sys/devices/system/cpu/cpu%cpuid/cpufreq/cpuinfo_cur_freq", "",
+        DumperConstant::CMD_DUMPER, DumperConstant::NONE, DumperConstant::NONE, ""
+    },
+    {
+        "", "", "", "",
+        DumperConstant::FD_OUTPUT, DumperConstant::NONE, DumperConstant::NONE, ""
+    },
+    {
+        "", "", "cat /sys/devices/system/cpu/cpu%cpuid/cpufreq/cpuinfo_max_freq", "",
+        DumperConstant::CMD_DUMPER, DumperConstant::NONE, DumperConstant::NONE, ""
+    },
+    {
+        "", "", "", "",
+        DumperConstant::FD_OUTPUT, DumperConstant::NONE, DumperConstant::NONE, ""
+    },
+};
+
 const ConfigData::DumperCfg ConfigData::dumpers_[] = {
     {.name_ = cpuUsageDumper_[0].name_,
      .desc_ = cpuUsageDumper_[0].desc_,
@@ -152,10 +172,18 @@ const ConfigData::DumperCfg ConfigData::dumpers_[] = {
      .desc_ = mapDumper_[0].desc_,
      .list_ = mapDumper_,
      .size_ = ArraySize(mapDumper_)},
+    {.name_ = cpuFreqDumper_[0].name_,
+     .desc_ = cpuFreqDumper_[0].desc_,
+     .list_ = cpuFreqDumper_,
+     .size_ = ArraySize(cpuFreqDumper_)},
 };
 
 const std::string ConfigData::cpuUsageGroup_[] = {
     "dumper_cpu_usage",
+};
+
+const std::string ConfigData::cpuFreqGroup_[] = {
+    "dumper_cpu_freq",
 };
 
 const std::string ConfigData::memoryGroup_[] = {
@@ -209,6 +237,14 @@ const std::string ConfigData::processesPidGroupMini_eng_[] = {
 };
 
 const ConfigData::GroupCfg ConfigData::groups_[] = {
+    {
+        .name_ = ConfigData::CONFIG_GROUP_CPU_FREQ,
+        .desc_ = "group of cpu freq dumper",
+        .list_ = cpuFreqGroup_,
+        .size_ = ArraySize(cpuFreqGroup_),
+        .type_ = DumperConstant::GROUPTYPE_CPUID,
+        .expand_ = true,
+    },
     {
         .name_ = ConfigData::CONFIG_GROUP_CPU_USAGE,
         .desc_ = "group of cpu usage dumper",

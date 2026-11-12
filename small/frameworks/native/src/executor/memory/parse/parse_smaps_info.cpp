@@ -111,15 +111,5 @@ bool ParseSmapsInfo::GetInfo(const MemoryFilter::MemoryType &memType, const int 
     return ret;
 }
 
-bool ParseSmapsInfo::GetSmapsData(const int &pid, bool isShowSmapsAddress,
-    std::map<std::string, MemoryData>& countSameNameMemMap, std::vector<MemoryData>& showAddressMemInfoVec)
-{
-    (void)pid;
-    (void)isShowSmapsAddress;
-    (void)countSameNameMemMap;
-    (void)showAddressMemInfoVec;
-    DUMPER_HILOGW(MODULE_SERVICE, "smaps detail is not supported on lite system");
-    return false;
-}
 } // namespace HiviewDFX
 } // namespace OHOS

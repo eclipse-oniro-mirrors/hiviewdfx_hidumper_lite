@@ -38,7 +38,6 @@ if (ohos_build_type == "debug" && ohos_kernel_type == "linux" &&
       "//base/hiviewdfx/hidumper_lite/small/frameworks/native/include",
       "//base/hiviewdfx/hidumper_lite/small/frameworks/native/manager",
       "//base/hiviewdfx/hidumper_lite/small/frameworks/native/task",
-      "//base/hiviewdfx/hidumper_lite/small/frameworks/native/data_inventory",
       "//base/hiviewdfx/hidumper_lite/small/frameworks/native/utils",
       "//base/hiviewdfx/hidumper_lite/small/services/native/include",
       "//base/hiviewdfx/hidumper_lite/small/interfaces/native/innerkits/include",
@@ -47,7 +46,6 @@ if (ohos_build_type == "debug" && ohos_kernel_type == "linux" &&
     ]
 
     deps = [
-      "//base/hiviewdfx/hidumper_lite/small/frameworks/native:dump_framework",
       "//base/hiviewdfx/hidumper_lite/small/frameworks/native:dump_main",
       "//base/hiviewdfx/hidumper_lite/small/services:hidumperservice_source",
       "//base/hiviewdfx/hidumper_lite/small/utils:utils",

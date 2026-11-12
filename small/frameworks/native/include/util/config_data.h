@@ -29,6 +29,7 @@ public:
     static const std::string CONFIG_DUMPER;
     static const std::string CONFIG_DUMPER_;
     static const std::string CONFIG_GROUP_CPU_USAGE;
+    static const std::string CONFIG_GROUP_CPU_FREQ;
     static const std::string CONFIG_GROUP_MEMORY;
     static const std::string CONFIG_GROUP_PROCESSES;
     static const std::string CONFIG_GROUP_PROCESSES_PID;
@@ -73,7 +74,9 @@ private:
     static const ItemCfg excuteTimeDumper_[];
     static const ItemCfg mountInfoDumper_[];
     static const ItemCfg mapDumper_[];
+    static const ItemCfg cpuFreqDumper_[];
     static const std::string cpuUsageGroup_[];
+    static const std::string cpuFreqGroup_[];
     static const std::string memoryGroup_[];
     static const std::string processesGroup_[];
     static const std::string processesPidGroup_[];
