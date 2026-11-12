@@ -281,8 +281,6 @@ void MemoryInfo::GetMemoryInfoByTimeInterval(int fd, const int32_t &pid, const i
 }
 
 namespace {
-
-
 void AccumulateSmapsValue(const std::string &key, uint64_t value, ClassSummary &current)
 {
     if (key == "Pss") {
@@ -395,7 +393,6 @@ bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap,
     FlushMapping(currentName, currentAnon, current, classMap, total);
     return !classMap.empty() || total.pss > 0 || total.sharedClean > 0 || total.privateDirty > 0;
 }
-
 } // namespace
 
 bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result)
@@ -546,9 +543,6 @@ void MemoryInfo::GetDma(const uint64_t &dmaValue, StringMatrix result)
     dma.push_back(to_string(dmaValue) + MemoryUtil::GetInstance().KB_UNIT_);
     result->push_back(dma);
 }
-
-
-
 
 string MemoryInfo::AddKbUnit(const uint64_t &value) const
 {
