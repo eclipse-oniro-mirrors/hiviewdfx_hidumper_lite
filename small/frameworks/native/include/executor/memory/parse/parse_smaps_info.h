@@ -21,24 +21,6 @@
 #include "executor/memory/parse/meminfo_data.h"
 namespace OHOS {
 namespace HiviewDFX {
-struct MemoryData {
-    std::string name = "[anon]";
-    std::string memoryClass;
-    std::string startAddr;  // 566ab4e000
-    std::string endAddr;    // 566ab7c000
-    std::string permission; // r-xp
-    int counts = 0; // number of occurrences of the same name
-    uint64_t size = 0; // calculate the sum of sizes corresponding to the same name.
-    uint64_t rss = 0;
-    uint64_t pss = 0;
-    uint64_t swapPss = 0;
-    uint64_t swap = 0;
-    uint64_t sharedDirty = 0;
-    uint64_t privateDirty = 0;
-    uint64_t sharedClean = 0;
-    uint64_t privateClean = 0;
-    uint64_t iNode = 0;
-};
 class ParseSmapsInfo {
 public:
     ParseSmapsInfo();
@@ -48,7 +30,6 @@ public:
     using GroupMap = std::map<std::string, ValueMap>;
 
     bool GetInfo(const MemoryFilter::MemoryType &memType, const int &pid, GroupMap &nativeMap, GroupMap &result);
-    // countSameNameMemMap---key: name, value: MemoryData
 
 private:
     std::string memGroup_ = "";

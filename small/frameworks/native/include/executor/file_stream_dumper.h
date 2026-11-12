@@ -29,7 +29,6 @@ public:
     DumpStatus AfterExecute() override;
 
 private:
-    DumpStatus ReadFile();
     DumpStatus ReadLineInFile();
     void BuildFileNames(const std::string& target, bool arg_pid, int pid,
         bool arg_cpuid, int cpuid);

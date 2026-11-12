@@ -54,12 +54,6 @@ public:
     const std::vector<std::string> PURG_SUM = {"Active(purg)", "Inactive(purg)"};
     const std::vector<std::string> PURG_PIN = {"Pined(purg)"};
 
-    const std::vector<std::string> TITLE_SMAPS_HAS_PID_ = {"Size", "Rss", "Pss", "Shared_Clean", "Shared_Dirty",
-        "Private_Clean", "Private_Dirty", "Swap", "SwapPss", "Counts", "Category", "Name"};
-
-    const std::vector<std::string> TITLE_V_SMAPS_HAS_PID_ = {"Size", "Rss", "Pss", "Shared_Clean", "Shared_Dirty",
-        "Private_Clean", "Private_Dirty", "Swap",  "SwapPss", "Perm", "Start", "End", "Category", "Name"};
-
     const std::vector<std::string> MEMINFO_TAG_ = {
         "MemTotal", "MemFree",       "Cached",       "SwapTotal", "KernelStack", "SUnreclaim", "PageTables",
         "Shmem",    "IonTotalCache", "IonTotalUsed", "Buffers",   "Mapped",      "Slab",       "VmallocUsed",

@@ -24,16 +24,6 @@
 #include "hidumper_executor.h"
 #include "raw_param.h"
 
-#define HIDUMPER_DEBUG
-#ifdef HIDUMPER_DEBUG
-#define LOG_DEBUG_DUMP(format, ...) \
-    do { \
-        fprintf(stdout, "Debug:" format "\n", ##__VA_ARGS__); \
-    } while (0)
-#else
-#define LOG_DEBUG(format, ...)
-#endif
-
 namespace OHOS {
 namespace HiviewDFX {
 class FDOutput : public HidumperExecutor {

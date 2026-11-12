@@ -24,7 +24,6 @@ public:
     ~GetHardwareInfo();
 
     bool GetHardwareUsage(uint64_t &totalValue);
-    void Stop();
 
 private:
     const static int WORD_SIZE = 4;

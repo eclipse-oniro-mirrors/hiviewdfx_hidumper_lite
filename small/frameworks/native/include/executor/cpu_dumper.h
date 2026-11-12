@@ -15,7 +15,6 @@
 #ifndef CPU_DUMPER_H
 #define CPU_DUMPER_H
 #include "hidumper_executor.h"
-#include "dump_cpu_data.h"
 
 namespace OHOS {
 namespace HiviewDFX {

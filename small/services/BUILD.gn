@@ -26,7 +26,6 @@ config("service_config") {
 ohos_source_set("hidumperservice_source") {
   sources = [
     "native/src/dump_common_utils.cpp",
-    "native/src/dump_cpu_data.cpp",
     "native/src/dump_manager_service.cpp",
     "native/src/raw_param.cpp",
   ]

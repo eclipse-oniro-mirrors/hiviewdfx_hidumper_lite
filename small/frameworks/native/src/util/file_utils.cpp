@@ -14,10 +14,10 @@
 */
 #include <chrono>
 #include <climits>
+#include <cstdlib>
 #include <filesystem>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "directory_ex.h"
 #include "hilog_wrapper.h"
 #include "util/file_utils.h"
 namespace fs = std::filesystem;
