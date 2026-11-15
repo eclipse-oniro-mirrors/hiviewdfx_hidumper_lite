@@ -893,7 +893,8 @@ uint64_t MemoryInfo::GetVss(const int32_t &pid)
 {
     string path = "/proc/" + to_string(pid) + "/statm";
     uint64_t res = 0;
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, true, true, [&res, &pid](const string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, true, true,
+        [&res, &pid](const string& line) -> void {
         if (!line.empty()) {
             uint64_t tempValue = 0;
             int retScanf = sscanf_s(line.c_str(), "%llu^*", &tempValue);

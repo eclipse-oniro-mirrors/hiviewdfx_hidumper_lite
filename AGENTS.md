@@ -87,7 +87,7 @@ mini/lite 为 C 语言轻量组件；small 为 C++ 组件。构建依赖 OpenHar
 grep -n "sub_component\|deps\|components" bundle.json
 ```
 
-- 以构建无新增告警作为静态检查门槛；small 侧 C++ 可用设备 clang 做 `-fsyntax-only` 语法检查。
+- 以构建无新增告警作为静态检查门槛；small 侧 C++ 可用 OHOS 预置编译工具链做 `-fsyntax-only` 语法检查。
 - 涉及 ioctl 命令 / 弱函数签名 / AT 命令格式的改动仍须走 §3.3 完成标准（含设备验证）。
 
 ## 4. 核心工作原则（必须遵守）
@@ -150,7 +150,7 @@ grep -n "sub_component\|deps\|components" bundle.json
 ## 6. 知识索引
 
 - `README.md` / `README.zh.md` — 组件简介、AT 命令用法表、small 命令用法、系统接口、适配接口。
-- `small/AGENTS.md` — small 形态权威文档（裁剪决策、构建验证、遗留事项）。
+- `small/AGENTS.md` — small 形态专用文档（裁剪决策、构建验证、遗留事项）。
 - `bundle.json` — 组件依赖与构建目标。
 
 ### 6.1 词汇 / 场景 → 文档触发表

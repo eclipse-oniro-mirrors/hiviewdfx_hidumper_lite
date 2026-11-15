@@ -79,7 +79,8 @@ void ParseSmapsRollupInfo::GetValue(const string &str, MemInfoData::MemInfo &mem
 bool ParseSmapsRollupInfo::GetMemInfo(const int &pid, MemInfoData::MemInfo &memInfo)
 {
     string path = "/proc/" + to_string(pid) + "/smaps_rollup";
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, false, true, [this, &memInfo](const string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, false, true,
+        [this, &memInfo](const string& line) -> void {
         GetValue(line, memInfo);
     });
     return ret;

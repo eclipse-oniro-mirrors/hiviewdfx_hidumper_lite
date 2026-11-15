@@ -55,7 +55,8 @@ void ParseMeminfo::SetData(const string &str, ValueMap &result)
 bool ParseMeminfo::GetMeminfo(ValueMap &result)
 {
     string path = "/proc/meminfo";
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, false, true, [this, &result](const string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, false, true,
+        [this, &result](const string& line) -> void {
         SetData(line, result);
     });
     return ret;
