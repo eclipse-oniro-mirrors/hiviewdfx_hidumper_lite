@@ -15,4 +15,3 @@
 
 # any change to behind files needs to be reviewed by @leonchan5
 small/interfaces/native/innerkits/include/dump_common_utils.h @leonchan5
-small/interfaces/native/innerkits/include/dump_cpu_data.h @leonchan5

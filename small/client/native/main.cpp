@@ -24,7 +24,7 @@ namespace {
 void SigHandler(int sig)
 {
     if (sig == SIGINT) {
-        std::thread([&]() mutable {
+        std::thread([]() {
             char *argv[] = {
                 const_cast<char *>("hidumper"),
                 const_cast<char *>("--mem"),

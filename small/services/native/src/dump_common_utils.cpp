@@ -160,7 +160,8 @@ bool DumpCommonUtils::IsUserPid(const std::string &pid)
 {
     string path = "/proc/" + pid + "/smaps";
     string lineContent;
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, true, false, [&](const string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(path, true, false,
+        [&lineContent](const string& line) -> void {
         lineContent += line;
     });
     if (!ret) {
@@ -202,7 +203,8 @@ bool DumpCommonUtils::GetUserPids(std::vector<int> &pids)
 bool DumpCommonUtils::GetLinesInFile(const std::string& file, std::vector<std::string>& lines)
 {
     std::string content;
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(file, false, false, [&](const std::string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(file, false, false,
+        [&content](const std::string& line) -> void {
         content += line;
     });
     if (!ret) {
@@ -247,7 +249,8 @@ bool DumpCommonUtils::GetProcessNameByPid(int pid, std::string& name)
     }
     std::string filePath = filesysdir;
     std::string content;
-    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(filePath, false, false, [&](const string& line) -> void {
+    bool ret = FileUtils::GetInstance().LoadStringFromProcCb(filePath, false, false,
+        [&content](const string& line) -> void {
         content += line;
     });
     if (!ret) {

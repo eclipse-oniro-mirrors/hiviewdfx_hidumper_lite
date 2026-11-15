@@ -20,8 +20,8 @@
             "mini",
             "small"
         ],
-        "rom": "100KB",
-        "ram": "~200KB",
+        "rom": "264KB",
+        "ram": "~2MB",
         "deps": {
             "components": [
                 "bounds_checking_function",
@@ -31,9 +31,15 @@
             ],
             "third_party": []
         },
+        "features": [
+            "hidumper_lite_disable_test = false"
+        ],
         "build": {
             "sub_component": [
                 "//base/hiviewdfx/hidumper_lite:hidumper",
+                "//base/hiviewdfx/hidumper_lite/small/test:hidumper_lite_test"
+            ],
+            "test": [
                 "//base/hiviewdfx/hidumper_lite/small/test:hidumper_lite_test"
             ]
         }

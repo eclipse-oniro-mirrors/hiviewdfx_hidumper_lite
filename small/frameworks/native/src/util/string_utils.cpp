@@ -91,8 +91,10 @@ void StringUtils::HexToDec(const string &str, uint64_t &value)
     for (size_t i = 0; i < l; i++) {
         if (str[i] >= '0' && str[i] <= '9')
             value += (str[i] - '0') * pow(HEX_STR, l - 1 - i);
-        else
+        else if (str[i] >= 'A' && str[i] <= 'F')
             value += (str[i] - 'A' + DEC_STR) * pow(HEX_STR, l - 1 - i);
+        else if (str[i] >= 'a' && str[i] <= 'f')
+            value += (str[i] - 'a' + DEC_STR) * pow(HEX_STR, l - 1 - i);
     }
 }
 
