@@ -55,7 +55,7 @@ mini/lite 为 C 语言轻量组件；small 为 C++ 组件。构建依赖 OpenHar
 
 ### 3.2 测试
 
-- small：`small/test/unittest/lite_hidumper_test.cpp` 共 21 个用例，debug + linux 构建自动纳入（`small/test/BUILD.gn`，可用 `hidumper_lite_disable_test` 关闭）；fs.yml 不打包 test 目录，UT 进镜像需手动拷贝并重打包（步骤见 `small/AGENTS.md` §5）。
+- small：`small/test/unittest/lite_hidumper_test.cpp` 共 26 个用例，debug + linux 构建自动纳入（`small/test/BUILD.gn`，可用 `hidumper_lite_disable_test` 关闭）；fs.yml 不打包 test 目录，UT 进镜像需手动拷贝并重打包（步骤见 `small/AGENTS.md` §5）。
 - mini：无独立单元测试目标，验证通过设备 AT 命令实际调用完成——在 LiteOS-M 设备串口输入 `AT+HIDUMPER=-h` 确认帮助输出。
 
 ### 3.3 完成标准
@@ -120,7 +120,7 @@ grep -n "sub_component\|deps\|components" bundle.json
 │   ├── frameworks/                   # dump 框架（config 配置链 + executor 执行链）
 │   ├── interfaces/                   # 内部接口
 │   ├── services/                     # 服务层（单进程直调，无 SA/IPC）
-│   ├── test/                         # 单元测试（21 用例，debug 构建纳入）
+│   ├── test/                         # 单元测试（26 用例，debug 构建纳入）
 │   └── utils/                        # 公共能力（轻量系统依赖替代）
 ├── BUILD.gn                           # 根目标（按 kernel_type 分发）
 ├── bundle.json                        # 组件元数据
