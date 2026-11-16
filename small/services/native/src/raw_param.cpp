@@ -32,7 +32,8 @@ RawParam::RawParam(int calllingUid, int calllingPid, uint32_t reqId, int argc, c
     : uid_(calllingUid), pid_(calllingPid), canceled_(false), finished_(false), reqId_(reqId), outfd_(outfd)
 {
     DUMPER_HILOGD(MODULE_SERVICE, "create|pid=%{public}d, reqId=%{public}u", pid_, reqId_);
-    if (!Init(argc, argv)) {
+    isValid_ = Init(argc, argv);
+    if (!isValid_) {
         DUMPER_HILOGE(MODULE_SERVICE, "init args failed, argc=%{public}d", argc);
     }
 }
@@ -62,6 +63,11 @@ bool RawParam::Init(int argc, char *const argv[])
     }
     DUMPER_HILOGD(MODULE_SERVICE, "leave|true");
     return true;
+}
+
+bool RawParam::IsValid()
+{
+    return isValid_;
 }
 
 void RawParam::Uninit()

@@ -237,6 +237,19 @@ TEST(HidumperCmdTest, InvalidOption)
 }
 
 /**
+ * @tc.name: HidumperCmdOverlongArg001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, OverlongArg)
+{
+    std::string overlongArg(SINGLE_ARG_MAXLEN + 1, '1');
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem", overlongArg.c_str()}, out);
+    EXPECT_EQ(ret, static_cast<int>(DumpStatus::DUMP_INVALID_ARG));
+    EXPECT_EQ(out.find("Total Memory Usage by PID"), std::string::npos);
+}
+
+/**
  * @tc.name: HidumperCmdCpuUsage001
  * @tc.type: FUNC
  */

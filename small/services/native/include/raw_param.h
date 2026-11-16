@@ -31,6 +31,7 @@ public:
     int GetPid();
     uint32_t GetRequestId();
     bool IsCanceled();
+    bool IsValid();
 public:
     void UpdateProgress(uint32_t total, uint32_t current);
     void UpdateProgress(uint64_t progress);
@@ -47,6 +48,7 @@ private:
     int pid_ {-1};
     bool canceled_ {false};
     bool finished_ {false};
+    bool isValid_ {false};
     bool hasError_ {false};
     uint32_t reqId_ {0};
     char* argHead_[ARG_MAX_COUNT + 1] = {nullptr};

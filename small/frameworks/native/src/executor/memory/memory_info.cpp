@@ -329,11 +329,11 @@ std::string ResolveClassName(const std::string &name, bool anon)
 void FlushMapping(const std::string &name, bool anon, ClassSummary &current,
     std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
 {
-    if (name.empty()) {
-        return;
+    if (!name.empty()) {
+        AddSummary(classMap[ResolveClassName(name, anon)], current);
+    } else {
+        AddSummary(classMap[anon ? MEMINFO_ANONPAGE_OTHER : MEMINFO_FILEPAGE_OTHER], current);
     }
-    std::string group = ResolveClassName(name, anon);
-    AddSummary(classMap[group], current);
     AddSummary(total, current);
     current = ClassSummary();
 }

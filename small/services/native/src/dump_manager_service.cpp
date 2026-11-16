@@ -44,6 +44,10 @@ int32_t DumpManagerService::Request(int argc, char *argv[], int outfd)
 {
     DUMPER_HILOGD(MODULE_SERVICE, "enter|");
     auto rawParam = std::make_shared<RawParam>(getuid(), getpid(), GetRequestId(), argc, argv, outfd);
+    if (!rawParam->IsValid()) {
+        DUMPER_HILOGE(MODULE_SERVICE, "error|invalid args, argc=%{public}d", argc);
+        return DumpStatus::DUMP_INVALID_ARG;
+    }
     int32_t ret = RequestMain(rawParam);
     DUMPER_HILOGD(MODULE_SERVICE, "leave|ret=%{public}d", ret);
     return ret;

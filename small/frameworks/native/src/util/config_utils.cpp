@@ -149,11 +149,14 @@ bool ConfigUtils::HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dum
     MergePidInfos(currentPidInfos_, dumperOpts.processPid_);
 
     std::shared_ptr<OptionArgs> args;
-    if (dumperOpts.processPid_ < 0) {
-        GetConfig(CONFIG_GROUP_PROCESSES_ENG, dumpCfgs, args);
-    } else {
-        GetConfig(CONFIG_GROUP_PROCESSES_PID_ENG, dumpCfgs, args);
-    }
+#ifdef OHOS_DEBUG
+    const std::string &groupName = (dumperOpts.processPid_ < 0) ? CONFIG_GROUP_PROCESSES_ENG
+        : CONFIG_GROUP_PROCESSES_PID_ENG;
+#else
+    const std::string &groupName = (dumperOpts.processPid_ < 0) ? CONFIG_GROUP_PROCESSES
+        : CONFIG_GROUP_PROCESSES_PID;
+#endif
+    GetConfig(groupName, dumpCfgs, args);
 
     currentPidInfos_.clear();
     currentPidInfo_.Reset();
