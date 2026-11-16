@@ -370,6 +370,13 @@ bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap,
     if (!file.is_open()) {
         return false;
     }
+    return CollectSmapsByClassFromStream(file, classMap, total);
+}
+} // namespace
+
+bool CollectSmapsByClassFromStream(std::istream &file, std::map<std::string, ClassSummary> &classMap,
+    ClassSummary &total)
+{
     std::string line;
     std::string currentName;
     bool currentAnon = true;
@@ -393,7 +400,6 @@ bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap,
     FlushMapping(currentName, currentAnon, current, classMap, total);
     return !classMap.empty() || total.pss > 0 || total.sharedClean > 0 || total.privateDirty > 0;
 }
-} // namespace
 
 bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result)
 {

@@ -56,7 +56,7 @@ bool RawParam::Init(int argc, char *const argv[])
             return false;
         }
         argValues_[i] = std::make_unique<ArgValue>();
-        if (sprintf_s(argValues_[i]->value, SINGLE_ARG_MAXLEN, "%s", argv[i]) < 0) {
+        if (sprintf_s(argValues_[i]->value, SINGLE_ARG_MAXLEN + 1, "%s", argv[i]) < 0) {
             return false;
         }
         argHead_[i] = argValues_[i]->value;

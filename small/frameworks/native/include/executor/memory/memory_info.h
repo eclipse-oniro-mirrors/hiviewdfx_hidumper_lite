@@ -15,6 +15,7 @@
 #ifndef MEMORY_INFO_H
 #define MEMORY_INFO_H
 #include <future>
+#include <istream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -35,6 +36,9 @@ struct ClassSummary {
     uint64_t swap = 0;
     uint64_t swapPss = 0;
 };
+
+bool CollectSmapsByClassFromStream(std::istream &smapsStream, std::map<std::string, ClassSummary> &classMap,
+    ClassSummary &total);
 
 namespace {
 inline static const std::string MEMINFO_PSS = "Pss";

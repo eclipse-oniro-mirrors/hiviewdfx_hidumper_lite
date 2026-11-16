@@ -15,6 +15,7 @@
 #include "util/config_utils.h"
 #include "hilog_wrapper.h"
 #include "dump_common_utils.h"
+#include "file_ex.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -146,17 +147,24 @@ bool ConfigUtils::HandleDumpProcesses(std::vector<std::shared_ptr<DumpCfg>> &dum
     DUMPER_HILOGD(MODULE_COMMON, "debug|processes");
     currentPidInfo_.Reset();
     currentPidInfos_.clear();
+#ifndef OHOS_DEBUG
+    std::shared_ptr<RawParam> callback = dumperParam_->getClientCallback();
+    if (callback != nullptr) {
+        SaveStringToFd(callback->GetOutputFd(), "-p option only support debug application\n");
+    }
+    DUMPER_HILOGE(MODULE_COMMON, "release build, -p option only support debug application");
+    currentPidInfos_.clear();
+    currentPidInfo_.Reset();
+    return false;
+#endif
     MergePidInfos(currentPidInfos_, dumperOpts.processPid_);
 
     std::shared_ptr<OptionArgs> args;
-#ifdef OHOS_DEBUG
-    const std::string &groupName = (dumperOpts.processPid_ < 0) ? CONFIG_GROUP_PROCESSES_ENG
-        : CONFIG_GROUP_PROCESSES_PID_ENG;
-#else
-    const std::string &groupName = (dumperOpts.processPid_ < 0) ? CONFIG_GROUP_PROCESSES
-        : CONFIG_GROUP_PROCESSES_PID;
-#endif
-    GetConfig(groupName, dumpCfgs, args);
+    if (dumperOpts.processPid_ < 0) {
+        GetConfig(CONFIG_GROUP_PROCESSES_ENG, dumpCfgs, args);
+    } else {
+        GetConfig(CONFIG_GROUP_PROCESSES_PID_ENG, dumpCfgs, args);
+    }
 
     currentPidInfos_.clear();
     currentPidInfo_.Reset();

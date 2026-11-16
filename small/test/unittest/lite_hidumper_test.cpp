@@ -17,12 +17,15 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <fstream>
+#include <map>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 
 #include "dump_common_utils.h"
 #include "dump_manager_service.h"
+#include "executor/memory/memory_info.h"
 #include "file_ex.h"
 #include "string_ex.h"
 #include "unique_fd.h"
@@ -250,6 +253,92 @@ TEST(HidumperCmdTest, OverlongArg)
 }
 
 /**
+ * @tc.name: HidumperCmdMaxLenArg001
+ * @tc.type: FUNC
+ */
+TEST(HidumperCmdTest, MaxLenArg)
+{
+    std::string maxLenArg(SINGLE_ARG_MAXLEN, '1');
+    std::string out;
+    int ret = RunHidumperCmd({"hidumper", "--mem", maxLenArg.c_str()}, out);
+    EXPECT_NE(ret, static_cast<int>(DumpStatus::DUMP_INVALID_ARG));
+    EXPECT_EQ(out.find("Total Memory Usage by PID"), std::string::npos);
+}
+
+/**
+ * @tc.name: MemorySmapsAnonBeforeNamed001
+ * @tc.type: FUNC
+ */
+TEST(MemorySmapsTest, AnonBeforeNamedVma)
+{
+    std::string smaps =
+        "7a0000000000-7a0000001000 rw-p 00000000 00:00 0 \n"
+        "Pss:                  100 kB\n"
+        "Private_Dirty:        100 kB\n"
+        "7a0000002000-7a0000003000 r--p 00000000 fd:01 42        /usr/lib/libdemo.so\n"
+        "Pss:                   60 kB\n"
+        "Private_Clean:         60 kB\n";
+    std::istringstream iss(smaps);
+    std::map<std::string, ClassSummary> classMap;
+    ClassSummary total;
+    ASSERT_TRUE(CollectSmapsByClassFromStream(iss, classMap, total));
+    EXPECT_EQ(classMap["AnonPage other"].pss, static_cast<uint64_t>(100));
+    EXPECT_EQ(classMap["AnonPage other"].privateDirty, static_cast<uint64_t>(100));
+    EXPECT_EQ(classMap[".so"].pss, static_cast<uint64_t>(60));
+    EXPECT_EQ(classMap[".so"].privateClean, static_cast<uint64_t>(60));
+    EXPECT_EQ(total.pss, static_cast<uint64_t>(160));
+}
+
+/**
+ * @tc.name: MemorySmapsAnonContiguous001
+ * @tc.type: FUNC
+ */
+TEST(MemorySmapsTest, AnonContiguousVma)
+{
+    std::string smaps =
+        "7a0000000000-7a0000001000 rw-p 00000000 00:00 0 \n"
+        "Pss:                  100 kB\n"
+        "Private_Dirty:        100 kB\n"
+        "7a0000001000-7a0000002000 rw-p 00000000 00:00 0 \n"
+        "Pss:                   50 kB\n"
+        "Private_Dirty:         50 kB\n"
+        "7a0000002000-7a0000003000 r--p 00000000 fd:01 42        /usr/lib/libdemo.so\n"
+        "Pss:                   60 kB\n"
+        "Private_Clean:         60 kB\n";
+    std::istringstream iss(smaps);
+    std::map<std::string, ClassSummary> classMap;
+    ClassSummary total;
+    ASSERT_TRUE(CollectSmapsByClassFromStream(iss, classMap, total));
+    EXPECT_EQ(classMap["AnonPage other"].pss, static_cast<uint64_t>(150));
+    EXPECT_EQ(classMap["AnonPage other"].privateDirty, static_cast<uint64_t>(150));
+    EXPECT_EQ(classMap[".so"].pss, static_cast<uint64_t>(60));
+    EXPECT_EQ(total.pss, static_cast<uint64_t>(210));
+}
+
+/**
+ * @tc.name: MemorySmapsAnonAtEof001
+ * @tc.type: FUNC
+ */
+TEST(MemorySmapsTest, AnonVmaAtEof)
+{
+    std::string smaps =
+        "7a0000002000-7a0000003000 r--p 00000000 fd:01 42        /usr/lib/libdemo.so\n"
+        "Pss:                   60 kB\n"
+        "Private_Clean:         60 kB\n"
+        "7c0000000000-7c0000001000 rw-p 00000000 00:00 0 \n"
+        "Pss:                  300 kB\n"
+        "Private_Dirty:        300 kB\n";
+    std::istringstream iss(smaps);
+    std::map<std::string, ClassSummary> classMap;
+    ClassSummary total;
+    ASSERT_TRUE(CollectSmapsByClassFromStream(iss, classMap, total));
+    EXPECT_EQ(classMap["AnonPage other"].pss, static_cast<uint64_t>(300));
+    EXPECT_EQ(classMap["AnonPage other"].privateDirty, static_cast<uint64_t>(300));
+    EXPECT_EQ(classMap[".so"].pss, static_cast<uint64_t>(60));
+    EXPECT_EQ(total.pss, static_cast<uint64_t>(360));
+}
+
+/**
  * @tc.name: HidumperCmdCpuUsage001
  * @tc.type: FUNC
  */
@@ -262,6 +351,7 @@ TEST(HidumperCmdTest, CpuUsage)
     EXPECT_NE(out.find("CPU usage from "), std::string::npos);
     EXPECT_NE(out.find("Total:"), std::string::npos);
     EXPECT_NE(out.find("Details of Processes:"), std::string::npos);
+    EXPECT_NE(out.find("[cpuusage]"), std::string::npos);
 }
 
 /**

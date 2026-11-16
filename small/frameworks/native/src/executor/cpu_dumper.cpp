@@ -324,8 +324,12 @@ DumpStatus CPUDumper::Execute()
         return DumpStatus::DUMP_FAIL;
     }
     startTime_ = GetCurrTime();
-    dumpCPUDatas_->clear();
+    StringMatrix localDatas = std::make_shared<std::vector<std::vector<std::string>>>();
+    StringMatrix sharedDatas = dumpCPUDatas_;
+    dumpCPUDatas_ = localDatas;
     bool ret = DumpCpuUsage(cpuUsagePid_);
+    dumpCPUDatas_ = sharedDatas;
+    sharedDatas->insert(sharedDatas->end(), localDatas->begin(), localDatas->end());
     DUMPER_HILOGI(MODULE_COMMON, "info|CPUDumper Execute end, ret=%{public}d", ret);
     return ret ? DumpStatus::DUMP_OK : DumpStatus::DUMP_FAIL;
 }
