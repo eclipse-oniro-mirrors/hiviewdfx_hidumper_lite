@@ -31,7 +31,7 @@ HiDumper Lite 是 OpenHarmony 面向 LiteOS-A / LiteOS-M / Linux 内核的轻量
 
 ### 2.2 嵌套指引
 
-`small/AGENTS.md` 为 small 形态的目录级嵌套 Agent 指引（裁剪决策、构建验证、板级验证记录、遗留事项），涉及 `small/` 的任务必须先读它。其余说明见 `README.md` / `README.zh.md`。
+本仓库无目录级别的嵌套 Agent 指引。详细说明见 `README.md` / `README.zh.md`。
 
 ## 3. 构建与验证
 
@@ -55,7 +55,7 @@ mini/lite 为 C 语言轻量组件；small 为 C++ 组件。构建依赖 OpenHar
 
 ### 3.2 测试
 
-- small：`small/test/unittest/lite_hidumper_test.cpp` 共 26 个用例，debug + linux 构建自动纳入（`small/test/BUILD.gn`，可用 `hidumper_lite_disable_test` 关闭）；fs.yml 不打包 test 目录，UT 进镜像需手动拷贝并重打包（步骤见 `small/AGENTS.md` §5）。
+- small：`small/test/unittest/lite_hidumper_test.cpp` 共 26 个用例，debug + linux 构建自动纳入（`small/test/BUILD.gn`，可用 `hidumper_lite_disable_test` 关闭）；fs.yml 不打包 test 目录，UT 进镜像需手动拷贝到 `out/<product>/bin` 后重打包镜像。
 - mini：无独立单元测试目标，验证通过设备 AT 命令实际调用完成——在 LiteOS-M 设备串口输入 `AT+HIDUMPER=-h` 确认帮助输出。
 
 ### 3.3 完成标准
@@ -150,7 +150,6 @@ grep -n "sub_component\|deps\|components" bundle.json
 ## 6. 知识索引
 
 - `README.md` / `README.zh.md` — 组件简介、AT 命令用法表、small 命令用法、系统接口、适配接口。
-- `small/AGENTS.md` — small 形态专用文档（裁剪决策、构建验证、遗留事项）。
 - `bundle.json` — 组件依赖与构建目标。
 
 ### 6.1 词汇 / 场景 → 文档触发表
@@ -163,7 +162,7 @@ grep -n "sub_component\|deps\|components" bundle.json
 | 任务含 `ioctl` / `/dev/hidumper` / `HIDUMPER_IOC` | `lite/hidumper.c:56-62` ioctl 定义 + `:85` `ExecAction` |
 | 任务含 `fault log` / `-df` / `InjectKernelCrash` | `hidumper_core.c:86` `InjectKernelCrash` + `hidumper_adapter.c:58` `DumpFaultLog` |
 | 任务含 `memstart` / `memsize` / `-m`（mini/lite） | `lite/hidumper.c` `DumpMemData:118` + `hidumper_adapter.c:64` `DumpMemRegion` |
-| 任务含 `--mem` / `--cpuusage` / `--cpufreq` / `-p`（small） | `small/AGENTS.md` + `small/frameworks/native/src/` 对应 executor 与 `config_data.cpp` |
+| 任务含 `--mem` / `--cpuusage` / `--cpufreq` / `-p`（small） | `small/frameworks/native/src/` 对应 executor 与 `config_data.cpp` |
 
 ### 6.2 术语表
 
@@ -192,7 +191,7 @@ grep -n "sub_component\|deps\|components" bundle.json
 
 ### 7.1 语言与命名
 
-- `mini/` 与 `lite/` 为纯 C 代码；`small/` 为 C++（构建注入 `-std=c++17`，见 `small/AGENTS.md`）。
+- `mini/` 与 `lite/` 为纯 C 代码；`small/` 为 C++（构建注入 `-std=c++17`）。
 - C 侧无命名空间，函数前缀 `Dump*` / `at_*` / `HiDumper*`。
 - 弱函数用 `WEAK` 宏标记，默认返回 0（空实现），平台覆盖。
 
