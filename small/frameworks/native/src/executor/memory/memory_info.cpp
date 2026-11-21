@@ -327,12 +327,21 @@ std::string ResolveClassName(const std::string &name, bool anon)
 }
 
 void FlushMapping(const std::string &name, bool anon, ClassSummary &current,
-    std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
+    std::map<std::string, ClassSummary> &classMap, ClassSummary &total,
+    std::map<std::string, ClassSummary> &heapMap)
 {
     if (!name.empty()) {
         AddSummary(classMap[ResolveClassName(name, anon)], current);
     } else {
         AddSummary(classMap[anon ? MEMINFO_ANONPAGE_OTHER : MEMINFO_FILEPAGE_OTHER], current);
+    }
+
+    if (name == "[heap]") {
+        AddSummary(heapMap["brk heap"], current);
+    } else if (name.find("scudo") != std::string::npos) {
+        AddSummary(heapMap["heap"], current);
+    } else if (name.empty() && anon) {
+        AddSummary(heapMap["mmap heap"], current);
     }
     AddSummary(total, current);
     current = ClassSummary();
@@ -363,19 +372,20 @@ void ParseMappingHeader(const std::string &line, std::string &name, bool &anon)
     name = nameIsNumber ? "" : lastName;
 }
 
-bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap, ClassSummary &total)
+bool CollectSmapsByClass(int pid, std::map<std::string, ClassSummary> &classMap, ClassSummary &total,
+    std::map<std::string, ClassSummary> &heapMap)
 {
     std::string path = "/proc/" + std::to_string(pid) + "/smaps";
     std::ifstream file(path);
     if (!file.is_open()) {
         return false;
     }
-    return CollectSmapsByClassFromStream(file, classMap, total);
+    return CollectSmapsByClassFromStream(file, classMap, total, heapMap);
 }
 } // namespace
 
 bool CollectSmapsByClassFromStream(std::istream &file, std::map<std::string, ClassSummary> &classMap,
-    ClassSummary &total)
+    ClassSummary &total, std::map<std::string, ClassSummary> &heapMap)
 {
     std::string line;
     std::string currentName;
@@ -383,7 +393,7 @@ bool CollectSmapsByClassFromStream(std::istream &file, std::map<std::string, Cla
     ClassSummary current;
     while (std::getline(file, line)) {
         if (IsMappingHeader(line)) {
-            FlushMapping(currentName, currentAnon, current, classMap, total);
+            FlushMapping(currentName, currentAnon, current, classMap, total, heapMap);
             ParseMappingHeader(line, currentName, currentAnon);
             continue;
         }
@@ -397,16 +407,24 @@ bool CollectSmapsByClassFromStream(std::istream &file, std::map<std::string, Cla
         iss >> value;
         AccumulateSmapsValue(key, value, current);
     }
-    FlushMapping(currentName, currentAnon, current, classMap, total);
+    FlushMapping(currentName, currentAnon, current, classMap, total, heapMap);
     return !classMap.empty() || total.pss > 0 || total.sharedClean > 0 || total.privateDirty > 0;
+}
+
+bool CollectSmapsByClassFromStream(std::istream &file, std::map<std::string, ClassSummary> &classMap,
+    ClassSummary &total)
+{
+    std::map<std::string, ClassSummary> heapMap;
+    return CollectSmapsByClassFromStream(file, classMap, total, heapMap);
 }
 
 bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     std::map<std::string, ClassSummary> classMap;
+    std::map<std::string, ClassSummary> heapMap;
     ClassSummary total;
-    if (!CollectSmapsByClass(pid, classMap, total)) {
+    if (!CollectSmapsByClass(pid, classMap, total, heapMap)) {
         DUMPER_HILOGE(MODULE_SERVICE, "read smaps fail, pid:%{public}d", pid);
         return false;
     }
@@ -430,9 +448,24 @@ bool MemoryInfo::GetMemoryInfoByPid(const int32_t &pid, StringMatrix result)
     SetClassRow("FilePage other", fileIt != classMap.end() ? fileIt->second : ClassSummary(), result);
     SetTotalRow(total, result);
 
+    GetHeapBreakdownByPid(heapMap, result);
     GetPurgByPid(pid, result);
     GetDma(totalGraph_, result);
     return true;
+}
+
+void MemoryInfo::GetHeapBreakdownByPid(const std::map<std::string, ClassSummary> &heapMap, StringMatrix result)
+{
+    AddBlankLine(result);
+    vector<string> title;
+    title.push_back("native heap:");
+    result->push_back(title);
+
+    const std::vector<std::string> heapKeys = {"heap", "brk heap", "mmap heap"};
+    for (const auto &key : heapKeys) {
+        auto it = heapMap.find(key);
+        SetClassRow(key + ":", it != heapMap.end() ? it->second : ClassSummary(), result);
+    }
 }
 
 void MemoryInfo::InsertMemoryTitle(StringMatrix result)

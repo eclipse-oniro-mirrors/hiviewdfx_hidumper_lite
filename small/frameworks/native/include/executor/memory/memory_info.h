@@ -39,6 +39,8 @@ struct ClassSummary {
 
 bool CollectSmapsByClassFromStream(std::istream &smapsStream, std::map<std::string, ClassSummary> &classMap,
     ClassSummary &total);
+bool CollectSmapsByClassFromStream(std::istream &smapsStream, std::map<std::string, ClassSummary> &classMap,
+    ClassSummary &total, std::map<std::string, ClassSummary> &heapMap);
 
 namespace {
 inline static const std::string MEMINFO_PSS = "Pss";
@@ -140,6 +142,7 @@ private:
     void GetRamUsage(const GroupMap &smapsinfos, const ValueMap &meminfo, StringMatrix result);
     void GetPurgTotal(const ValueMap &meminfo, StringMatrix result);
     void GetPurgByPid(const int32_t &pid, StringMatrix result);
+    void GetHeapBreakdownByPid(const std::map<std::string, ClassSummary> &heapMap, StringMatrix result);
     void GetRamCategory(const GroupMap &smapsinfos, const ValueMap &meminfos, StringMatrix result);
     void AddBlankLine(StringMatrix result);
     void MemUsageToMatrix(const MemInfoData::MemUsage &memUsage, StringMatrix result);
