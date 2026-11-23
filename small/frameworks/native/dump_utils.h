@@ -1,0 +1,51 @@
+/*
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#ifndef DUMP_UTILS_H
+#define DUMP_UTILS_H
+#include <string>
+#include <vector>
+#include <unistd.h>
+
+namespace OHOS {
+namespace HiviewDFX {
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY
+#endif
+class DumpUtils {
+public:
+    // system operations
+    static void IgnoreOom();
+    static void IgnorePipeQuit();
+    static void IgnoreStdoutCache();
+    static void SetAdj(int adj);
+
+    // file operations
+    static int FdToRead(const std::string &file);
+    static int FdToWrite(const std::string &file);
+
+    // process operations
+    static bool CheckProcessAlive(uint32_t pid);
+
+    static bool PathIsValid(const std::string &path);
+    static constexpr int topPriority = -20;
+    static constexpr int topOomAdj = -1000;
+    static constexpr char fileCurOomAdj[] = "/proc/self/oom_score_adj";
+    static constexpr auto& space = " ";
+private:
+    static std::string ErrnoToMsg(const int &error);
+};
+} // namespace HiviewDFX
+} // namespace OHOS
+#endif // DUMP_UTILS_H
