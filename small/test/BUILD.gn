@@ -1,0 +1,56 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/lite/config/test.gni")
+
+declare_args() {
+  hidumper_lite_disable_test = false
+}
+
+group("hidumper_lite_test") {
+  if (ohos_build_type == "debug" && ohos_kernel_type == "linux" &&
+      !hidumper_lite_disable_test) {
+    deps = [ ":lite_hidumper_unittest" ]
+  }
+}
+
+if (ohos_build_type == "debug" && ohos_kernel_type == "linux" &&
+    !hidumper_lite_disable_test) {
+  unittest("lite_hidumper_unittest") {
+    output_extension = "bin"
+    output_dir = "$root_out_dir/test/unittest/hidumper_lite"
+    sources = [ "unittest/lite_hidumper_test.cpp" ]
+
+
+    include_dirs = [
+      "unittest",
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native",
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native/include",
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native/manager",
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native/task",
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native/utils",
+      "//base/hiviewdfx/hidumper_lite/small/services/native/include",
+      "//base/hiviewdfx/hidumper_lite/small/interfaces/native/innerkits/include",
+      "//base/hiviewdfx/hidumper_lite/small/utils/native/include",
+      "//base/hiviewdfx/hilog_lite/interfaces/native/kits",
+    ]
+
+    deps = [
+      "//base/hiviewdfx/hidumper_lite/small/frameworks/native:dump_main",
+      "//base/hiviewdfx/hidumper_lite/small/services:hidumperservice_source",
+      "//base/hiviewdfx/hidumper_lite/small/utils:utils",
+      "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
+  }
+}
