@@ -1,0 +1,124 @@
+/*
+ * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#include "util/string_utils.h"
+#include <cmath>
+#include <sstream>
+#include <iomanip>
+#include <regex>
+#include "string_ex.h"
+using namespace std;
+namespace OHOS {
+namespace HiviewDFX {
+
+constexpr int MILLISECONDS_PER_SECOND = 1000;
+
+StringUtils::StringUtils()
+{
+}
+
+StringUtils::~StringUtils()
+{
+}
+
+bool StringUtils::IsStringToIntSuccess(const std::string &str, int64_t &val)
+{
+    char *endPtr = nullptr;
+    errno = 0;
+    long long num = 0;
+    num = std::strtoll(str.c_str(), &endPtr, 10); // 10 : decimal scale
+    if (errno != 0 || num > INT64_MAX || num < INT64_MIN) {
+        return false;
+    }
+    val = static_cast<int64_t>(num);
+    return true;
+}
+
+void StringUtils::StringSplit(const string &content, const string &split, vector<string> &result)
+{
+    SplitStr(content, split, result, false, false);
+}
+
+bool StringUtils::IsBegin(const string &content, const string &begin)
+{
+    if (content.find(begin) == 0) {
+        return true;
+    }
+    return false;
+}
+
+bool StringUtils::IsEnd(const string &content, const string &end)
+{
+    bool result = false;
+    if (content.length() >= end.length()) {
+        result = (0 == content.compare(content.length() - end.length(), end.length(), end));
+    }
+    return result;
+}
+
+bool StringUtils::IsSameStr(const string &first, const string &second)
+{
+    if (first == second) {
+        return true;
+    }
+    return false;
+}
+
+void StringUtils::ReplaceAll(string &str, const string &oldValue, const string &newValue)
+{
+    str = ReplaceStr(str, oldValue, newValue);
+}
+
+bool StringUtils::IsNum(string str)
+{
+    return IsNumericStr(str);
+}
+
+void StringUtils::HexToDec(const string &str, uint64_t &value)
+{
+    size_t l = str.length();
+    for (size_t i = 0; i < l; i++) {
+        if (str[i] >= '0' && str[i] <= '9')
+            value += (str[i] - '0') * pow(HEX_STR, l - 1 - i);
+        else if (str[i] >= 'A' && str[i] <= 'F')
+            value += (str[i] - 'A' + DEC_STR) * pow(HEX_STR, l - 1 - i);
+        else if (str[i] >= 'a' && str[i] <= 'f')
+            value += (str[i] - 'a' + DEC_STR) * pow(HEX_STR, l - 1 - i);
+    }
+}
+
+/**
+ * @description: The character length is insufficient to complement
+ * @param {string} &str-The string to be filled
+ * @param {int} &length-The length of the string to be set
+ * @param {char} &fileStr-A character to be added when the length is insufficient
+ * @param {bool} &left-true:Add characters on the left,false:Add characters to the right
+ * @return {*}
+ */
+
+void StringUtils::SetWidth(const int &width, const char &fileStr, const bool &left, string &str)
+{
+    ostringstream s;
+    s.clear();
+
+    if (left) {
+        s << setw(width) << setfill(fileStr) << setiosflags(ios::left) << str;
+    } else {
+        s << setw(width) << setfill(fileStr) << setiosflags(ios::right) << str;
+    }
+    str = s.str();
+}
+
+} // namespace HiviewDFX
+} // namespace OHOS
